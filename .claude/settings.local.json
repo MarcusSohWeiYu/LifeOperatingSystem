@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npx create-next-app@latest --help)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx shadcn@latest --help)",
+      "Bash(npx:*)"
+    ]
+  }
+}
