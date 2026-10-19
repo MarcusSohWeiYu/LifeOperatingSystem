@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    env_file:
+      - .env.local
+    ports:
+      # Bind only to localhost — never expose publicly
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
