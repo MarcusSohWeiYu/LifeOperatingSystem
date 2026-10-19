@@ -9,7 +9,12 @@ const envSchema = z.object({
   GOOGLE_SHEET_ID: z.string().min(1, "GOOGLE_SHEET_ID is required"),
 });
 
-function parseEnv() {
+type Env = z.infer<typeof envSchema>;
+
+// Lazy: validation runs on first property access (request time), not at module
+// load time — this prevents Vercel build failures when env vars are not set
+// during the build step.
+function getEnv(): Env {
   const result = envSchema.safeParse({
     GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
@@ -30,4 +35,9 @@ function parseEnv() {
   };
 }
 
-export const env = parseEnv();
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop: string | symbol) {
+    if (typeof prop !== "string") return undefined;
+    return getEnv()[prop as keyof Env];
+  },
+});
