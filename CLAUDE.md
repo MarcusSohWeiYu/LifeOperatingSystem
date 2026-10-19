@@ -177,7 +177,7 @@ FATSECRET_CLIENT_SECRET=
   - Types: `feat` (new feature), `refactor` (restructure without behaviour change), `fix` (bug fix), `chore` (config/deps/scripts), `docs` (docs only), `test` (tests only)
 - **Typical split for a feature:** (1) deps/config, (2) data layer / server code, (3) UI components, (4) wiring / integration — adjust as needed so each commit builds and makes sense alone.
 - **Never commit:** `.env.local`, secrets, or generated files that aren't already tracked.
-- Always include `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` in the commit trailer.
+- Never include `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` in the commit trailer.
 
 ---
 
