@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, ZapIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FoodEntryRow } from "./food-entry-row";
@@ -12,12 +12,11 @@ type Props = {
   meal: MealType;
   entries: FoodEntry[];
   onAdd: (meal: MealType) => void;
-  onQuickAdd: (meal: MealType) => void;
   onEdit: (entry: FoodEntry) => void;
   onDelete: (entry: FoodEntry) => void;
 };
 
-export function MealSection({ meal, entries, onAdd, onQuickAdd, onEdit, onDelete }: Props) {
+export function MealSection({ meal, entries, onAdd, onEdit, onDelete }: Props) {
   const mealCals = totalCalories(entries);
 
   return (
@@ -54,7 +53,7 @@ export function MealSection({ meal, entries, onAdd, onQuickAdd, onEdit, onDelete
 
       <Separator />
 
-      {/* Add buttons */}
+      {/* Add button */}
       <div className="flex gap-2 px-3 py-2.5">
         <Button
           variant="ghost"
@@ -64,15 +63,6 @@ export function MealSection({ meal, entries, onAdd, onQuickAdd, onEdit, onDelete
         >
           <PlusIcon className="h-3.5 w-3.5" />
           Add Food
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-xs text-muted-foreground"
-          onClick={() => onQuickAdd(meal)}
-        >
-          <ZapIcon className="h-3.5 w-3.5" />
-          Quick Add
         </Button>
       </div>
     </div>

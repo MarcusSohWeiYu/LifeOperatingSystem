@@ -7,17 +7,19 @@ import { DateNavigator } from "./date-navigator";
 import { DailySummary } from "./daily-summary";
 import { MealSection } from "./meal-section";
 import { FoodFormDialog } from "./food-form-dialog";
-import { QuickAddDialog } from "./quick-add-dialog";
+import { AddFoodDialog } from "./add-food-dialog";
 import { GoalsDialog } from "./goals-dialog";
 import { MEAL_ORDER } from "./types";
 import type { DailyGoals, FoodEntry, MealType, NutritionState } from "./types";
 import { getDefaultNutritionState } from "./mock-data";
 import { todayDateStr, shiftDate, loadNutritionState, saveNutritionState } from "./utils";
+import { lookupFoodBarcode } from "@/actions/nutrition";
+import type { FoodProduct } from "@/actions/nutrition";
 
 type DialogState =
   | { type: "none" }
-  | { type: "add"; meal: MealType }
-  | { type: "quick-add"; meal: MealType }
+  | { type: "add-food"; meal: MealType }
+  | { type: "food-form"; meal: MealType; prefill?: Omit<FoodEntry, "id" | "meal"> }
   | { type: "edit"; entry: FoodEntry }
   | { type: "delete"; entry: FoodEntry }
   | { type: "goals" };
@@ -35,6 +37,7 @@ export function NutritionClient() {
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [dialog, setDialog] = useState<DialogState>({ type: "none" });
+  const [scanLookupPending, setScanLookupPending] = useState(false);
   const idCounterRef = useRef(0);
 
   useEffect(() => {
@@ -91,6 +94,61 @@ export function NutritionClient() {
     setState((s) => ({ ...s, goals }));
   }
 
+  // ── Add food handlers ─────────────────────────────────────────────────────
+
+  function handleSelectProduct(product: FoodProduct) {
+    if (dialog.type !== "add-food") return;
+    const meal = dialog.meal;
+    setDialog({
+      type: "food-form",
+      meal,
+      prefill: {
+        name: product.name,
+        brand: product.brand,
+        servingSize: product.servingSize,
+        servings: 1,
+        calories: product.calories,
+        proteinG: product.proteinG,
+        carbsG: product.carbsG,
+        fatG: product.fatG,
+      },
+    });
+  }
+
+  function handleQuickAddSave(entry: Omit<FoodEntry, "id">) {
+    handleSaveFood(entry);
+    setDialog({ type: "none" });
+    toast.success("Food added");
+  }
+
+  async function handleBarcodeDetected(barcode: string) {
+    if (dialog.type !== "add-food") return;
+    const meal = dialog.meal;
+    setScanLookupPending(true);
+    const result = await lookupFoodBarcode(barcode);
+    setScanLookupPending(false);
+    if (!result.ok) {
+      toast.error(result.error === "Product not found" ? "Product not found — enter details manually" : result.error);
+      setDialog({ type: "food-form", meal });
+      return;
+    }
+    const product = result.food;
+    setDialog({
+      type: "food-form",
+      meal,
+      prefill: {
+        name: product.name,
+        brand: product.brand,
+        servingSize: product.servingSize,
+        servings: 1,
+        calories: product.calories,
+        proteinG: product.proteinG,
+        carbsG: product.carbsG,
+        fatG: product.fatG,
+      },
+    });
+  }
+
   // ── Date nav ─────────────────────────────────────────────────────────────
 
   function handlePrev() { setSelectedDate((d) => shiftDate(d, -1)); }
@@ -99,8 +157,9 @@ export function NutritionClient() {
 
   // ── Dialog helpers ────────────────────────────────────────────────────────
 
-  const addMeal = dialog.type === "add" ? dialog.meal : "breakfast";
-  const quickAddMeal = dialog.type === "quick-add" ? dialog.meal : "breakfast";
+  const addFoodMeal = dialog.type === "add-food" ? dialog.meal : "breakfast";
+  const foodFormMeal = dialog.type === "food-form" ? dialog.meal : "breakfast";
+  const foodFormPrefill = dialog.type === "food-form" ? dialog.prefill : undefined;
 
   return (
     <div className="space-y-4">
@@ -122,18 +181,29 @@ export function NutritionClient() {
           key={meal}
           meal={meal}
           entries={entriesForMeal(meal)}
-          onAdd={(m) => setDialog({ type: "add", meal: m })}
-          onQuickAdd={(m) => setDialog({ type: "quick-add", meal: m })}
+          onAdd={(m) => setDialog({ type: "add-food", meal: m })}
           onEdit={(entry) => setDialog({ type: "edit", entry })}
           onDelete={(entry) => setDialog({ type: "delete", entry })}
         />
       ))}
 
-      {/* Add dialog */}
-      <FoodFormDialog
-        open={dialog.type === "add"}
+      {/* Add food tabbed dialog */}
+      <AddFoodDialog
+        open={dialog.type === "add-food"}
         onOpenChange={(open) => !open && setDialog({ type: "none" })}
-        meal={addMeal}
+        meal={addFoodMeal}
+        onSelectProduct={handleSelectProduct}
+        onQuickAddSave={handleQuickAddSave}
+        scanLoading={scanLookupPending}
+        onBarcodeDetected={handleBarcodeDetected}
+      />
+
+      {/* Food form (from search / barcode result) */}
+      <FoodFormDialog
+        open={dialog.type === "food-form"}
+        onOpenChange={(open) => !open && setDialog({ type: "none" })}
+        meal={foodFormMeal}
+        prefill={foodFormPrefill}
         onSave={handleSaveFood}
       />
 
@@ -143,14 +213,6 @@ export function NutritionClient() {
         onOpenChange={(open) => !open && setDialog({ type: "none" })}
         meal={dialog.type === "edit" ? dialog.entry.meal : "breakfast"}
         entry={dialog.type === "edit" ? dialog.entry : undefined}
-        onSave={handleSaveFood}
-      />
-
-      {/* Quick add */}
-      <QuickAddDialog
-        open={dialog.type === "quick-add"}
-        onOpenChange={(open) => !open && setDialog({ type: "none" })}
-        meal={quickAddMeal}
         onSave={handleSaveFood}
       />
 

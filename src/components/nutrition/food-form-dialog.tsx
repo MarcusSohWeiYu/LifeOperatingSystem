@@ -35,44 +35,58 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   meal: MealType;
   entry?: FoodEntry;
+  prefill?: Omit<FoodEntry, "id" | "meal">;
   onSave: (entry: Omit<FoodEntry, "id">, existingId?: string) => void;
 };
 
-function toDefaultValues(entry?: FoodEntry): FormValues {
-  if (!entry) {
+function toDefaultValues(entry?: FoodEntry, prefill?: Omit<FoodEntry, "id" | "meal">): FormValues {
+  if (entry) {
     return {
-      name: "",
-      brand: "",
-      servingSize: "1 serving",
-      servings: "1",
-      calories: "",
-      proteinG: "0",
-      carbsG: "0",
-      fatG: "0",
+      name: entry.name,
+      brand: entry.brand,
+      servingSize: entry.servingSize,
+      servings: String(entry.servings),
+      calories: String(entry.calories),
+      proteinG: String(entry.proteinG),
+      carbsG: String(entry.carbsG),
+      fatG: String(entry.fatG),
+    };
+  }
+  if (prefill) {
+    return {
+      name: prefill.name,
+      brand: prefill.brand,
+      servingSize: prefill.servingSize,
+      servings: String(prefill.servings),
+      calories: String(prefill.calories),
+      proteinG: String(prefill.proteinG),
+      carbsG: String(prefill.carbsG),
+      fatG: String(prefill.fatG),
     };
   }
   return {
-    name: entry.name,
-    brand: entry.brand,
-    servingSize: entry.servingSize,
-    servings: String(entry.servings),
-    calories: String(entry.calories),
-    proteinG: String(entry.proteinG),
-    carbsG: String(entry.carbsG),
-    fatG: String(entry.fatG),
+    name: "",
+    brand: "",
+    servingSize: "1 serving",
+    servings: "1",
+    calories: "",
+    proteinG: "0",
+    carbsG: "0",
+    fatG: "0",
   };
 }
 
-export function FoodFormDialog({ open, onOpenChange, meal, entry, onSave }: Props) {
+export function FoodFormDialog({ open, onOpenChange, meal, entry, prefill, onSave }: Props) {
   const isEdit = !!entry;
+  const hasPrefill = !isEdit && !!prefill;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: toDefaultValues(entry),
+    defaultValues: toDefaultValues(entry, prefill),
   });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (open) form.reset(toDefaultValues(entry)); }, [open]);
+  useEffect(() => { if (open) form.reset(toDefaultValues(entry, prefill)); }, [open]);
 
   function onSubmit(values: FormValues) {
     const calories = parseFloat(values.calories);
@@ -102,7 +116,7 @@ export function FoodFormDialog({ open, onOpenChange, meal, entry, onSave }: Prop
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit food" : `Add to ${MEAL_LABELS[meal]}`}
+            {isEdit ? "Edit food" : hasPrefill ? "Confirm & add" : `Add to ${MEAL_LABELS[meal]}`}
           </DialogTitle>
         </DialogHeader>
 
