@@ -1,14 +1,15 @@
-# Money Planner
+# Life OS
 
-A personal finance planning app for one user, running entirely on your local machine.
-It is **not** a transaction tracker — that lives elsewhere.
-This app is for **planning**: where your income goes, what your subscriptions cost, and how much to save each month to hit your trips and purchases by a target date.
-
-Data is stored in a **Google Sheet** you own. The app talks to it via a service account and the Sheets API v4.
+A personal life operating system running entirely on your local machine.
+Built around modules — each module owns its own data, pages, and navigation.
 
 ---
 
-## Features
+## Modules
+
+### Finance
+Plan where your money goes. Not a transaction tracker — that lives elsewhere.
+Data is stored in a **Google Sheet** you own via a service account and the Sheets API v4.
 
 | Page | What it does |
 |---|---|
@@ -18,6 +19,9 @@ Data is stored in a **Google Sheet** you own. The app talks to it via a service 
 | **Budget** | Zero-based budget by category (needs / wants / savings) with an allocation strip |
 | **Goals** | Trips and purchases with target amounts, dates, monthly saving required, and progress |
 | **Planner** | What-if sandbox — adjust income, toggle subscriptions, add hypothetical goals; never saves |
+
+### Fitness *(coming soon)*
+Workouts, nutrition, and stats. Infrastructure in place; data layer not yet connected.
 
 ---
 
@@ -89,13 +93,13 @@ The container restarts automatically when Docker Desktop restarts (`restart: unl
 
 ## Installing as an app (PWA)
 
-The app ships a web manifest. In Chrome or Edge, open http://127.0.0.1:3000 and click the install icon in the address bar ("Install Money Planner"). In Safari on macOS, use **File → Add to Dock**.
+The app ships a web manifest. In Chrome or Edge, open http://127.0.0.1:3000 and click the install icon in the address bar ("Install Life OS"). In Safari on macOS, use **File → Add to Dock**.
 
 ---
 
 ## Backing up your data
 
-Your data lives in the Google Sheet, not on your local machine.
+Your finance data lives in the Google Sheet, not on your local machine.
 
 1. Open the sheet in Google Sheets.
 2. **File → Download → Microsoft Excel (.xlsx)** — downloads all tabs in one file.
@@ -106,7 +110,7 @@ Google Sheets also keeps a full revision history (**File → Version history →
 
 ## Security
 
-This app has **no authentication**. Anyone who can reach http://127.0.0.1:3000 can read and modify your financial data.
+This app has **no authentication**. Anyone who can reach http://127.0.0.1:3000 can read and modify your data.
 
 - Keep the server bound to `127.0.0.1` (localhost). Do **not** change the bind address to `0.0.0.0` or expose the port on a public interface.
 - Do not use a tunnel (ngrok, Cloudflare Tunnel, etc.) to expose it publicly.
