@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AppSidebar } from "@/components/app-sidebar";
-import { MobileNav } from "@/components/mobile-nav";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Money Planner",
-  description: "Personal finance planning — income, subscriptions and goals.",
+  title: "Life OS",
+  description: "Personal life operating system.",
+  applicationName: "Life OS",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Life OS",
+  },
 };
 
 export default function RootLayout({
@@ -28,13 +32,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppSidebar />
-          <main className="md:pl-56 pb-16 md:pb-0 min-h-screen">
-            <div className="container mx-auto px-4 py-6 max-w-5xl">
-              {children}
-            </div>
-          </main>
-          <MobileNav />
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>
