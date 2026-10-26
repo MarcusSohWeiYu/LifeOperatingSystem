@@ -1,6 +1,6 @@
 "use client";
 
-import { PencilIcon, Trash2Icon } from "lucide-react";
+import { BookmarkIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { FoodEntry } from "./types";
@@ -8,11 +8,13 @@ import { effectiveCalories, effectiveCarbsG, effectiveFatG, effectiveProteinG } 
 
 type Props = {
   entry: FoodEntry;
+  saved: boolean;
   onEdit: (entry: FoodEntry) => void;
   onDelete: (entry: FoodEntry) => void;
+  onToggleSave: (entry: FoodEntry) => void;
 };
 
-export function FoodEntryRow({ entry, onEdit, onDelete }: Props) {
+export function FoodEntryRow({ entry, saved, onEdit, onDelete, onToggleSave }: Props) {
   const cals = effectiveCalories(entry);
   const protein = effectiveProteinG(entry);
   const carbs = effectiveCarbsG(entry);
@@ -48,6 +50,14 @@ export function FoodEntryRow({ entry, onEdit, onDelete }: Props) {
 
       {/* Actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => onToggleSave(entry)}
+          aria-label={saved ? `Unsave ${displayName}` : `Save ${displayName}`}
+        >
+          <BookmarkIcon className={cn("h-3.5 w-3.5", saved && "fill-current text-primary")} />
+        </Button>
         <Button
           variant="ghost"
           size="icon-xs"

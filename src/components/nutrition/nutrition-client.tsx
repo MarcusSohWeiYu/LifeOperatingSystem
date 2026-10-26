@@ -9,8 +9,8 @@ import { MealSection } from "./meal-section";
 import { FoodFormDialog } from "./food-form-dialog";
 import { AddFoodDialog } from "./add-food-dialog";
 import { GoalsDialog } from "./goals-dialog";
-import { MEAL_ORDER } from "./types";
-import type { DailyGoals, FoodEntry, MealType, NutritionState } from "./types";
+import { MEAL_ORDER, MEAL_LABELS } from "./types";
+import type { DailyGoals, FoodEntry, MealType, NutritionState, SavedFood } from "./types";
 import { getDefaultNutritionState } from "./mock-data";
 import { todayDateStr, shiftDate, loadNutritionState, saveNutritionState } from "./utils";
 import { lookupFoodBarcode } from "@/actions/nutrition";
@@ -92,6 +92,92 @@ export function NutritionClient() {
 
   function handleUpdateGoals(goals: DailyGoals) {
     setState((s) => ({ ...s, goals }));
+  }
+
+  // ── Saved foods ────────────────────────────────────────────────────────────
+
+  const savedFoods: SavedFood[] = state.savedFoods ?? [];
+
+  const savedFoodKeys = new Set(
+    savedFoods.map((f) => `${f.name}|${f.brand}|${f.servingSize}`),
+  );
+
+  function handleToggleSave(entry: FoodEntry) {
+    const key = `${entry.name}|${entry.brand}|${entry.servingSize}`;
+    if (savedFoodKeys.has(key)) {
+      // Remove
+      setState((s) => ({
+        ...s,
+        savedFoods: (s.savedFoods ?? []).filter(
+          (f) => `${f.name}|${f.brand}|${f.servingSize}` !== key,
+        ),
+      }));
+      toast.success(`${entry.name} removed from saved`);
+    } else {
+      // Add
+      const saved: SavedFood = {
+        id: crypto.randomUUID(),
+        name: entry.name,
+        brand: entry.brand,
+        servingSize: entry.servingSize,
+        servings: entry.servings,
+        calories: entry.calories,
+        proteinG: entry.proteinG,
+        carbsG: entry.carbsG,
+        fatG: entry.fatG,
+        savedAt: new Date().toISOString(),
+      };
+      setState((s) => ({
+        ...s,
+        savedFoods: [saved, ...(s.savedFoods ?? [])],
+      }));
+      toast.success(`${entry.name} saved`);
+    }
+  }
+
+  function handleRemoveSaved(id: string) {
+    setState((s) => ({
+      ...s,
+      savedFoods: (s.savedFoods ?? []).filter((f) => f.id !== id),
+    }));
+    toast.success("Removed from saved");
+  }
+
+  function handleSelectSaved(food: SavedFood) {
+    if (dialog.type !== "add-food") return;
+    const meal = dialog.meal;
+    setDialog({
+      type: "food-form",
+      meal,
+      prefill: {
+        name: food.name,
+        brand: food.brand,
+        servingSize: food.servingSize,
+        servings: food.servings,
+        calories: food.calories,
+        proteinG: food.proteinG,
+        carbsG: food.carbsG,
+        fatG: food.fatG,
+      },
+    });
+  }
+
+  // ── Copy previous day ──────────────────────────────────────────────────────
+
+  function previousDayEntriesForMeal(meal: MealType): FoodEntry[] {
+    const prevDate = shiftDate(selectedDate, -1);
+    return (state.logs[prevDate]?.entries ?? []).filter((e) => e.meal === meal);
+  }
+
+  function handleCopyPreviousMeal(meal: MealType) {
+    const prevEntries = previousDayEntriesForMeal(meal);
+    if (prevEntries.length === 0) return;
+    const copied = prevEntries.map((e) => ({
+      ...e,
+      id: `copy-${crypto.randomUUID().slice(0, 8)}`,
+    }));
+    upsertEntries([...currentEntries(), ...copied]);
+    toast.success(`Copied ${copied.length} items from yesterday's ${MEAL_LABELS[meal]}`);
   }
 
   // ── Add food handlers ─────────────────────────────────────────────────────
@@ -181,9 +267,13 @@ export function NutritionClient() {
           key={meal}
           meal={meal}
           entries={entriesForMeal(meal)}
+          savedFoodIds={savedFoodKeys}
+          previousDayCount={meal !== "snacks" ? previousDayEntriesForMeal(meal).length : 0}
           onAdd={(m) => setDialog({ type: "add-food", meal: m })}
           onEdit={(entry) => setDialog({ type: "edit", entry })}
           onDelete={(entry) => setDialog({ type: "delete", entry })}
+          onToggleSave={handleToggleSave}
+          onCopyPrevious={() => handleCopyPreviousMeal(meal)}
         />
       ))}
 
@@ -192,7 +282,10 @@ export function NutritionClient() {
         open={dialog.type === "add-food"}
         onOpenChange={(open) => !open && setDialog({ type: "none" })}
         meal={addFoodMeal}
+        savedFoods={savedFoods}
         onSelectProduct={handleSelectProduct}
+        onSelectSaved={handleSelectSaved}
+        onRemoveSaved={handleRemoveSaved}
         onQuickAddSave={handleQuickAddSave}
         scanLoading={scanLookupPending}
         onBarcodeDetected={handleBarcodeDetected}

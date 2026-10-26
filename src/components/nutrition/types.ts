@@ -34,7 +34,21 @@ export type DailyLog = {
   entries: FoodEntry[];
 };
 
+export type SavedFood = {
+  id: string;
+  name: string;
+  brand: string;
+  servingSize: string;
+  servings: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  savedAt: string;
+};
+
 export type NutritionState = {
   goals: DailyGoals;
   logs: Record<string, DailyLog>;
+  savedFoods?: SavedFood[];
 };
