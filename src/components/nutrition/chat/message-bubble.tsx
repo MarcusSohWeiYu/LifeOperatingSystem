@@ -116,7 +116,7 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
               {content}
             </div>
           ) : (
-            <div className="rounded-2xl bg-muted text-foreground px-3.5 py-2 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
+            <div className="rounded-2xl bg-muted text-foreground px-3.5 py-2.5 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-p:leading-relaxed prose-headings:text-sm prose-headings:font-semibold prose-headings:my-2 prose-h3:text-[13px] prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-[13px] [&_ul]:pl-4 [&_ol]:pl-4">
               <ReactMarkdown>{content}</ReactMarkdown>
             </div>
           )}
