@@ -45,16 +45,19 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
       recognition.maxAlternatives = 1;
       recognition.continuous = false;
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        const parts: string[] = [];
-        for (let i = processedRef.current; i < event.results.length; i++) {
-          const transcript = event.results[i]?.[0]?.transcript?.trim();
-          if (transcript) parts.push(transcript);
-        }
-        processedRef.current = event.results.length;
-        const chunk = parts.join(" ");
-        if (chunk) {
-          setText((prev) => (prev ? `${prev} ${chunk}` : chunk));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        try {
+          const results = event.results;
+          if (!results || results.length === 0) return;
+          const last = results[results.length - 1];
+          if (!last || last.length === 0) return;
+          const transcript = String(last[0].transcript ?? "").trim();
+          if (transcript) {
+            setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+          }
+        } catch {
+          // silently ignore parse errors
         }
       };
       recognition.onend = () => {
