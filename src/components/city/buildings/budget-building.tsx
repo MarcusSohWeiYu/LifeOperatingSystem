@@ -31,7 +31,7 @@ function BudgetBuildingInner({ building, position, selected, onSelect }: Props) 
   const [hovered, setHovered] = useState(false);
   const color = TYPE_COLORS[building.type];
   const roofColor = TYPE_ROOF_COLORS[building.type];
-  const h = clamp(building.plannedMonthlyCents / 120_000, 0.4, 2.8);
+  const h = clamp(building.plannedMonthlyCents / 30_000, 1.2, 5.0);
 
   return (
     <group position={position}>

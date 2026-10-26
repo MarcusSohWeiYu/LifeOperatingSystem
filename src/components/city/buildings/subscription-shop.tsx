@@ -34,7 +34,7 @@ function SubscriptionShopInner({ shop, position, selected, onSelect, phase = 0 }
   const [hovered, setHovered] = useState(false);
   const matRef = useRef<MeshStandardMaterial>(null);
   const color = categoryColor(shop.category);
-  const bodyH = 0.55;
+  const bodyH = 1.1;
 
   useFrame((state) => {
     if (shop.renewingSoon && matRef.current && !selected && !hovered) {

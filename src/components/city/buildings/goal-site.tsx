@@ -28,7 +28,7 @@ function GoalSiteInner({ site, position, selected, onSelect }: Props) {
   const [hovered, setHovered] = useState(false);
   const craneRef = useRef<Group>(null);
   const color = HEALTH_COLORS[site.health];
-  const totalH = clamp(site.targetCents / 300_000, 0.6, 4.0);
+  const totalH = clamp(site.targetCents / 80_000, 2.0, 8.0);
   const filledH = Math.max(0.08, (site.progress / 100) * totalH);
   const remainH = Math.max(0, totalH - filledH);
   const isStruggling = site.health === "behind" || site.health === "overdue";

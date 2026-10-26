@@ -48,7 +48,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
       {/* Income towers */}
       {incomeSlice.map((inc, i) => {
         const wx = INC_START_X + i * INC_SPACING;
-        const h = Math.max(0.8, Math.min(4.5, inc.monthlyCents / 250_000));
+        const h = Math.max(2.0, Math.min(7.0, inc.monthlyCents / 60_000));
         return (
           <IncomeTower
             key={inc.id}
@@ -66,7 +66,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
       {/* Goal construction sites */}
       {goalsSlice.map((goal, i) => {
         const wx = GOAL_START_X + i * GOAL_SPACING;
-        const totalH = Math.max(0.6, Math.min(4.0, goal.targetCents / 300_000));
+        const totalH = Math.max(2.0, Math.min(8.0, goal.targetCents / 80_000));
         return (
           <GoalSite
             key={goal.id}
@@ -83,7 +83,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
       {/* Budget – needs */}
       {needsSlice.map((b, i) => {
         const wx = NEEDS_START_X + i * BUDGET_SPACING;
-        const h = Math.max(0.4, Math.min(2.8, b.plannedMonthlyCents / 120_000));
+        const h = Math.max(1.2, Math.min(5.0, b.plannedMonthlyCents / 30_000));
         return (
           <BudgetBuilding
             key={b.id}
@@ -100,7 +100,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
       {/* Budget – wants */}
       {wantsSlice.map((b, i) => {
         const wx = WANTS_START_X + i * BUDGET_SPACING;
-        const h = Math.max(0.4, Math.min(2.8, b.plannedMonthlyCents / 120_000));
+        const h = Math.max(1.2, Math.min(5.0, b.plannedMonthlyCents / 30_000));
         return (
           <BudgetBuilding
             key={b.id}
@@ -117,7 +117,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
       {/* Budget – savings */}
       {savingsSlice.map((b, i) => {
         const wx = SAVINGS_START_X + i * BUDGET_SPACING;
-        const h = Math.max(0.4, Math.min(2.8, b.plannedMonthlyCents / 120_000));
+        const h = Math.max(1.2, Math.min(5.0, b.plannedMonthlyCents / 30_000));
         return (
           <BudgetBuilding
             key={b.id}
@@ -142,7 +142,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
             phase={i * 1.2}
             selected={selectedId === sub.id}
             onSelect={() =>
-              onSelect(sub.id, [wx, 1.5, SUBS_Z1], { kind: "subscription", shop: sub })
+              onSelect(sub.id, [wx, 2.4, SUBS_Z1], { kind: "subscription", shop: sub })
             }
           />
         );
@@ -159,7 +159,7 @@ function FinanceDistrictInner({ data, selectedId, onSelect }: Props) {
             phase={i * 1.2 + 0.6}
             selected={selectedId === sub.id}
             onSelect={() =>
-              onSelect(sub.id, [wx, 1.5, SUBS_Z2], { kind: "subscription", shop: sub })
+              onSelect(sub.id, [wx, 2.4, SUBS_Z2], { kind: "subscription", shop: sub })
             }
           />
         );

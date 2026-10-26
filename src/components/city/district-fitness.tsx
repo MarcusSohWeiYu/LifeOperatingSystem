@@ -97,7 +97,7 @@ function FitnessDistrictInner({ selectedId, onSelect }: Props) {
         proteinG={fitnessData.proteinG}
         selected={selectedId === GYM_ID}
         onSelect={() =>
-          onSelect(GYM_ID, [GYM_POS[0], GYM_POS[1] + 1.8, GYM_POS[2]], {
+          onSelect(GYM_ID, [GYM_POS[0], GYM_POS[1] + 2.8, GYM_POS[2]], {
             kind: "gym",
             calories: fitnessData.caloriesConsumed,
             target: fitnessData.caloriesTarget,

@@ -8,7 +8,12 @@
       "Bash(npx create-next-app@latest --help)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(npx shadcn@latest --help)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -A 10 export.*RoundedBox '/Users/marcus/Documents/1. Personal Projects/FinanceTracker/node_modules/@react-three/drei/core/RoundedBox.d.ts')",
+      "Bash(grep onPointerMissed /Users/marcus/Documents/1. Personal Projects/FinanceTracker/node_modules/@react-three/fiber/dist/declarations/src/*.d.ts)",
+      "Bash(find '/Users/marcus/Documents/1. Personal Projects/FinanceTracker/node_modules/@react-three/fiber' -name *.d.ts -path */declarations/*)"
     ]
   }
 }

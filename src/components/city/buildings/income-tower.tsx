@@ -24,7 +24,7 @@ type Props = {
 function IncomeTowerInner({ building, position, selected, onSelect, phase = 0 }: Props) {
   const [hovered, setHovered] = useState(false);
   const groupRef = useRef<Group>(null);
-  const h = clamp(building.monthlyCents / 250_000, 0.8, 4.5);
+  const h = clamp(building.monthlyCents / 60_000, 2.0, 7.0);
 
   useFrame((state) => {
     if (groupRef.current) {
