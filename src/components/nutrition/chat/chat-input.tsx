@@ -148,7 +148,7 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
           placeholder="Describe your food or attach a photo..."
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          className="flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-base md:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           style={{ maxHeight: "120px", overflow: "auto" }}
         />
 

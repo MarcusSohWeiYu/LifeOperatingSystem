@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, MessageSquareIcon, PlusIcon, RotateCcwIcon, Trash2Icon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "cn";
@@ -29,6 +29,127 @@ function daysUntilPurge(deletedAt: string): number {
   const ms = 30 * 24 * 60 * 60 * 1000 - (Date.now() - new Date(deletedAt).getTime());
   return Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
 }
+
+/* ─── Swipeable row (touch only) ─── */
+
+function SwipeableRow({
+  children,
+  onSwipeDelete,
+}: {
+  children: React.ReactNode;
+  onSwipeDelete: () => void;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  const swipingRef = useRef(false);
+  const [offset, setOffset] = useState(0);
+  const [animating, setAnimating] = useState(true);
+  const [showDelete, setShowDelete] = useState(false);
+
+  const THRESHOLD = 80; // px to reveal delete button
+  const DELETE_WIDTH = 72;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    startX.current = touch.clientX;
+    currentX.current = touch.clientX;
+    swipingRef.current = false;
+    setAnimating(false);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const dx = touch.clientX - startX.current;
+    currentX.current = touch.clientX;
+
+    // Only allow left swipe
+    if (dx > 10) {
+      // swiping right — snap back
+      setOffset(0);
+      setShowDelete(false);
+      swipingRef.current = false;
+      return;
+    }
+
+    if (dx < -10) {
+      swipingRef.current = true;
+    }
+
+    if (swipingRef.current) {
+      // Clamp between -DELETE_WIDTH and 0 with rubber-band past threshold
+      const clamped = Math.max(-DELETE_WIDTH * 1.3, dx);
+      setOffset(clamped);
+      setShowDelete(Math.abs(dx) >= THRESHOLD);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    setAnimating(true);
+    if (showDelete) {
+      // Snap to reveal delete button
+      setOffset(-DELETE_WIDTH);
+    } else {
+      setOffset(0);
+    }
+    swipingRef.current = false;
+  }, [showDelete]);
+
+  const handleDelete = useCallback(() => {
+    setAnimating(true);
+    setOffset(-300); // animate off-screen
+    setTimeout(onSwipeDelete, 200);
+  }, [onSwipeDelete]);
+
+  const handleSnapBack = useCallback(() => {
+    setAnimating(true);
+    setOffset(0);
+    setShowDelete(false);
+  }, []);
+
+  return (
+    <div className="relative overflow-hidden" onBlur={handleSnapBack}>
+      {/* Delete button behind */}
+      <div
+        className="absolute inset-y-0 right-0 flex items-center bg-destructive text-destructive-foreground"
+        style={{ width: DELETE_WIDTH }}
+      >
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="flex h-full w-full items-center justify-center"
+        >
+          <Trash2Icon className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Sliding content */}
+      <div
+        ref={rowRef}
+        className={cn(
+          "relative bg-background",
+          animating && "transition-transform duration-200 ease-out",
+        )}
+        style={{ transform: `translateX(${offset}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          // If row is offset, snap back instead of triggering click
+          if (offset !== 0) {
+            handleSnapBack();
+          }
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Session drawer ─── */
 
 export function SessionDrawer({
   open,
@@ -80,29 +201,31 @@ export function SessionDrawer({
         <div className="flex-1 overflow-y-auto">
           {/* Active sessions */}
           {sortedActive.map((session) => (
-            <div
-              key={session.id}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted transition-colors",
-                session.id === activeSessionId && "bg-muted",
-              )}
-              onClick={() => { onSelect(session.id); onClose(); }}
-            >
-              <MessageSquareIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">{session.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {session.messages.length} message{session.messages.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
-                className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            <SwipeableRow key={session.id} onSwipeDelete={() => onDelete(session.id)}>
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors",
+                  session.id === activeSessionId && "bg-muted",
+                )}
+                onClick={() => { onSelect(session.id); onClose(); }}
               >
-                <Trash2Icon className="h-3.5 w-3.5" />
-              </button>
-            </div>
+                <MessageSquareIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{session.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {session.messages.length} message{session.messages.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                {/* Trash icon still visible on desktop (hidden on touch via smaller target) */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
+                  className="hidden md:block p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2Icon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </SwipeableRow>
           ))}
 
           {sortedActive.length === 0 && (

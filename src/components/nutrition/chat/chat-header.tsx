@@ -44,7 +44,7 @@ export function ChatHeader({ session, onNewSession, onDeleteSession, onRenameSes
               if (e.key === "Enter") confirmRename();
               if (e.key === "Escape") setEditing(false);
             }}
-            className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-primary"
+            className="flex-1 bg-transparent text-base md:text-sm font-medium outline-none border-b border-primary"
           />
           <Button variant="ghost" size="icon-xs" onClick={confirmRename}>
             <CheckIcon className="h-3.5 w-3.5" />
