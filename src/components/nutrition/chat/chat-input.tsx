@@ -33,18 +33,44 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
 
     const recognition = new SpeechRecognition();
     recognition.lang = "en-SG";
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-    recognition.continuous = false;
+    recognition.continuous = true;
+
+    let finalTranscript = "";
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0]?.[0]?.transcript ?? "";
-      if (transcript) {
-        setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      let interim = "";
+      finalTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result) continue;
+        const alt = result[0];
+        if (!alt) continue;
+        if (result.isFinal) {
+          finalTranscript += alt.transcript;
+        } else {
+          interim += alt.transcript;
+        }
+      }
+      const combined = (finalTranscript + (interim ? ` ${interim}` : "")).trim();
+      if (combined) {
+        setText((prev) => {
+          const base = prev.replace(/\s*🎤.*$/, "").trim();
+          const final = finalTranscript.trim();
+          const shown = interim ? `${final} 🎤${interim}` : final;
+          return base ? `${base} ${shown}` : shown;
+        });
       }
     };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    recognition.onend = () => {
+      setText((prev) => prev.replace(/\s*🎤/g, "").trim());
+      setListening(false);
+    };
+    recognition.onerror = () => {
+      setText((prev) => prev.replace(/\s*🎤/g, "").trim());
+      setListening(false);
+    };
 
     recognitionRef.current = recognition;
     recognition.start();
