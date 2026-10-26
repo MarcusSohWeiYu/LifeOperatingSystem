@@ -116,6 +116,26 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
 
   return (
     <div className="border-t bg-background p-3 space-y-2">
+      {/* Listening indicator */}
+      {listening && (
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-1.5">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+          </span>
+          <span className="text-xs font-medium text-red-600 dark:text-red-400">
+            Listening — speak now...
+          </span>
+          <button
+            type="button"
+            onClick={toggleSpeech}
+            className="ml-auto text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 font-medium"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+
       {/* Staged attachments */}
       <div className="flex flex-wrap gap-2">
         {imagePreview && (
@@ -210,7 +230,7 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
           placeholder="Describe your food..."
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-base md:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          className={`flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-base md:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${listening ? "border-red-500/50 ring-1 ring-red-500/30" : ""}`}
           style={{ overflow: "hidden" }}
         />
 
