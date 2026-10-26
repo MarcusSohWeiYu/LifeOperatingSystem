@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ImageIcon, SendIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AttachedFood } from "./types";
@@ -47,12 +47,24 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
     }
   }
 
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, []);
+
   function handleSubmit() {
     const trimmed = text.trim();
     if (!trimmed && !imagePreview && !stagedFood) return;
     onSend(trimmed, imagePreview ?? undefined, stagedFood ?? undefined);
     setText("");
     setImagePreview(null);
+    // Reset height after clearing
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) el.style.height = "auto";
+    });
     textareaRef.current?.focus();
   }
 
@@ -142,14 +154,14 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); autoResize(); }}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder="Describe your food or attach a photo..."
+          placeholder="Describe your food..."
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-base md:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-          style={{ maxHeight: "120px", overflow: "auto" }}
+          style={{ overflow: "hidden" }}
         />
 
         <Button
