@@ -53,6 +53,7 @@ export function ChatInput({ disabled, onSend }: Props) {
     <div className="border-t bg-background p-3 space-y-2">
       {imagePreview && (
         <div className="relative inline-block">
+          {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not optimizable */}
           <img
             src={imagePreview}
             alt="Attached"

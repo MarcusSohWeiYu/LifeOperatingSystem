@@ -16,6 +16,7 @@ export function MessageBubble({ message, onLogFood }: Props) {
   return (
     <div className={cn("flex flex-col gap-2", isUser ? "items-end" : "items-start")}>
       {message.imageDataUrl && (
+        /* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not optimizable */
         <img
           src={message.imageDataUrl}
           alt="Food photo"
