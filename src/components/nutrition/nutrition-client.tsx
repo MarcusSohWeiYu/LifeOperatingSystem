@@ -250,6 +250,8 @@ export function NutritionClient() {
     <div className="space-y-4">
       <DateNavigator
         date={selectedDate}
+        logs={state.logs}
+        goals={state.goals}
         onSelect={handleSelectDate}
         onToday={handleToday}
       />
