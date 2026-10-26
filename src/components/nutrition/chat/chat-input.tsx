@@ -15,19 +15,33 @@ export function ChatInput({ disabled, onSend }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Import dynamically to keep bundle small
+  function attachImage(file: File) {
     import("./image-utils").then(({ resizeImageToDataUrl }) => {
       resizeImageToDataUrl(file).then((dataUrl) => {
         setImagePreview(dataUrl);
       });
     });
+  }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    attachImage(file);
     // Reset input so the same file can be re-selected
     e.target.value = "";
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item?.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) attachImage(file);
+        return;
+      }
+    }
   }
 
   function handleSubmit() {
@@ -93,6 +107,7 @@ export function ChatInput({ disabled, onSend }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder="Describe your food or attach a photo..."
           disabled={disabled}
           rows={1}

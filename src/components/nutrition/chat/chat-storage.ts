@@ -1,6 +1,7 @@
 import type { ChatSession, ChatSessionStore } from "./types";
 
 const STORAGE_KEY = "ai-chat-sessions";
+const DELETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const EMPTY_STORE: ChatSessionStore = {
   sessions: [],
@@ -14,7 +15,13 @@ export function loadChatStore(): ChatSessionStore {
     if (!raw) return EMPTY_STORE;
     const parsed = JSON.parse(raw) as ChatSessionStore;
     if (!Array.isArray(parsed.sessions)) return EMPTY_STORE;
-    return parsed;
+    // Purge sessions deleted more than 30 days ago
+    const now = Date.now();
+    const sessions = parsed.sessions.filter((s) => {
+      if (!s.deletedAt) return true;
+      return now - new Date(s.deletedAt).getTime() < DELETED_RETENTION_MS;
+    });
+    return { ...parsed, sessions };
   } catch {
     return EMPTY_STORE;
   }
@@ -40,13 +47,41 @@ export function createSession(store: ChatSessionStore, id: string): ChatSessionS
   };
 }
 
-export function deleteSession(store: ChatSessionStore, sessionId: string): ChatSessionStore {
-  const sessions = store.sessions.filter((s) => s.id !== sessionId);
+export function softDeleteSession(store: ChatSessionStore, sessionId: string): ChatSessionStore {
+  const sessions = store.sessions.map((s) =>
+    s.id === sessionId ? { ...s, deletedAt: new Date().toISOString() } : s,
+  );
+  const activeSessions = sessions.filter((s) => !s.deletedAt);
   const activeSessionId =
     store.activeSessionId === sessionId
-      ? (sessions[0]?.id ?? null)
+      ? (activeSessions[0]?.id ?? null)
       : store.activeSessionId;
   return { sessions, activeSessionId };
+}
+
+export function restoreSession(store: ChatSessionStore, sessionId: string): ChatSessionStore {
+  return {
+    ...store,
+    sessions: store.sessions.map((s) =>
+      s.id === sessionId ? { ...s, deletedAt: undefined } : s,
+    ),
+  };
+}
+
+export function permanentlyDeleteSession(store: ChatSessionStore, sessionId: string): ChatSessionStore {
+  return {
+    ...store,
+    sessions: store.sessions.filter((s) => s.id !== sessionId),
+  };
+}
+
+export function renameSession(store: ChatSessionStore, sessionId: string, title: string): ChatSessionStore {
+  return {
+    ...store,
+    sessions: store.sessions.map((s) =>
+      s.id === sessionId ? { ...s, title } : s,
+    ),
+  };
 }
 
 export function updateSession(
@@ -64,5 +99,13 @@ export function updateSession(
 
 export function getActiveSession(store: ChatSessionStore): ChatSession | undefined {
   if (!store.activeSessionId) return undefined;
-  return store.sessions.find((s) => s.id === store.activeSessionId);
+  return store.sessions.find((s) => s.id === store.activeSessionId && !s.deletedAt);
+}
+
+export function activeSessions(store: ChatSessionStore): ChatSession[] {
+  return store.sessions.filter((s) => !s.deletedAt);
+}
+
+export function deletedSessions(store: ChatSessionStore): ChatSession[] {
+  return store.sessions.filter((s) => !!s.deletedAt);
 }

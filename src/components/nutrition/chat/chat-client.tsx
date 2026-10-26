@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { analyzeFood } from "@/actions/chat";
 import { loadNutritionState, saveNutritionState, todayDateStr } from "../utils";
@@ -12,9 +12,14 @@ import {
   loadChatStore,
   saveChatStore,
   createSession,
-  deleteSession,
+  softDeleteSession,
+  restoreSession,
+  permanentlyDeleteSession,
+  renameSession,
   updateSession,
   getActiveSession,
+  activeSessions,
+  deletedSessions,
 } from "./chat-storage";
 import { ChatHeader } from "./chat-header";
 import { SessionDrawer } from "./session-drawer";
@@ -23,7 +28,6 @@ import { ChatInput } from "./chat-input";
 
 export function ChatClient() {
   const [store, setStore] = useState<ChatSessionStore>(() => {
-    if (typeof window === "undefined") return { sessions: [], activeSessionId: null };
     let loaded = loadChatStore();
     if (loaded.sessions.length === 0) {
       loaded = createSession(loaded, crypto.randomUUID());
@@ -32,7 +36,6 @@ export function ChatClient() {
   });
   const [sending, setSending] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const idCounterRef = useRef(0);
 
   // Persist store on change
   useEffect(() => {
@@ -42,11 +45,6 @@ export function ChatClient() {
   const session = getActiveSession(store);
   const messages = useMemo(() => session?.messages ?? [], [session?.messages]);
 
-  function nextId(): string {
-    idCounterRef.current += 1;
-    return `chat-msg-${idCounterRef.current}`;
-  }
-
   // ── Session management ──────────────────────────────────────────────────
 
   function handleNewSession() {
@@ -55,25 +53,40 @@ export function ChatClient() {
 
   function handleDeleteSession() {
     if (!store.activeSessionId) return;
-    const next = deleteSession(store, store.activeSessionId);
-    // If all sessions deleted, create a new one
-    if (next.sessions.length === 0) {
+    const next = softDeleteSession(store, store.activeSessionId);
+    if (activeSessions(next).length === 0) {
       setStore(createSession(next, crypto.randomUUID()));
     } else {
       setStore(next);
     }
+    toast.success("Chat moved to trash");
   }
 
   function handleSelectSession(id: string) {
     setStore((s) => ({ ...s, activeSessionId: id }));
   }
 
-  function handleDeleteSessionFromDrawer(id: string) {
-    let next = deleteSession(store, id);
-    if (next.sessions.length === 0) {
+  function handleSoftDeleteFromDrawer(id: string) {
+    let next = softDeleteSession(store, id);
+    if (activeSessions(next).length === 0) {
       next = createSession(next, crypto.randomUUID());
     }
     setStore(next);
+    toast.success("Chat moved to trash");
+  }
+
+  function handleRestoreSession(id: string) {
+    setStore((s) => restoreSession(s, id));
+    toast.success("Chat restored");
+  }
+
+  function handlePermanentlyDelete(id: string) {
+    setStore((s) => permanentlyDeleteSession(s, id));
+    toast.success("Chat permanently deleted");
+  }
+
+  function handleRenameSession(id: string, title: string) {
+    setStore((s) => renameSession(s, id, title));
   }
 
   // ── Send message ──────────────────────────────────────────────────────
@@ -83,7 +96,7 @@ export function ChatClient() {
     const sessionId = store.activeSessionId;
 
     const userMsg: ChatMessage = {
-      id: nextId(),
+      id: crypto.randomUUID(),
       role: "user",
       content: text,
       imageDataUrl,
@@ -121,7 +134,7 @@ export function ChatClient() {
     }
 
     const assistantMsg: ChatMessage = {
-      id: nextId(),
+      id: crypto.randomUUID(),
       role: "assistant",
       content: result.content,
       foodItems: result.foodItems.length > 0 ? result.foodItems : undefined,
@@ -200,11 +213,14 @@ export function ChatClient() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
+    <div className="flex h-[calc(100vh-theme(spacing.6)*2)] md:h-[calc(100vh-theme(spacing.6)*2)] flex-col rounded-xl border bg-card overflow-hidden">
       <ChatHeader
         session={session}
         onNewSession={handleNewSession}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={(title) => {
+          if (store.activeSessionId) handleRenameSession(store.activeSessionId, title);
+        }}
         onToggleDrawer={() => setDrawerOpen((o) => !o)}
       />
 
@@ -221,11 +237,14 @@ export function ChatClient() {
 
       <SessionDrawer
         open={drawerOpen}
-        sessions={store.sessions}
+        activeSessions={activeSessions(store)}
+        deletedSessions={deletedSessions(store)}
         activeSessionId={store.activeSessionId}
         onSelect={handleSelectSession}
         onNew={handleNewSession}
-        onDelete={handleDeleteSessionFromDrawer}
+        onDelete={handleSoftDeleteFromDrawer}
+        onRestore={handleRestoreSession}
+        onPermanentlyDelete={handlePermanentlyDelete}
         onClose={() => setDrawerOpen(false)}
       />
     </div>

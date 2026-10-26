@@ -10,6 +10,7 @@ import {
   Activity,
   UtensilsCrossed,
   BarChart3,
+  SparklesIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -51,6 +52,7 @@ export const modules: ModuleConfig[] = [
       { href: "/fitness", label: "Dashboard", icon: LayoutDashboard },
       { href: "/fitness/workouts", label: "Workouts", icon: Activity },
       { href: "/fitness/nutrition", label: "Nutrition", icon: UtensilsCrossed },
+      { href: "/fitness/nutrition/chat", label: "AI Chat", icon: SparklesIcon },
       { href: "/fitness/stats", label: "Stats", icon: BarChart3 },
     ],
   },

@@ -18,6 +18,7 @@ export type ChatSession = {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 };
 
 export type ChatSessionStore = {
