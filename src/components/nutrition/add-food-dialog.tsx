@@ -73,24 +73,24 @@ export function AddFoodDialog({
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <div className="px-4">
             <TabsList variant="line" className="w-full">
-              <TabsTrigger value="saved" className="flex-1 gap-1">
-                <BookmarkIcon className="h-3.5 w-3.5" />
+              <TabsTrigger value="saved" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
+                <BookmarkIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 Saved
               </TabsTrigger>
-              <TabsTrigger value="search" className="flex-1 gap-1">
-                <SearchIcon className="h-3.5 w-3.5" />
+              <TabsTrigger value="search" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
+                <SearchIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 Search
               </TabsTrigger>
-              <TabsTrigger value="quick-add" className="flex-1 gap-1">
-                <ZapIcon className="h-3.5 w-3.5" />
+              <TabsTrigger value="quick-add" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
+                <ZapIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 Quick
               </TabsTrigger>
-              <TabsTrigger value="scan" className="flex-1 gap-1">
-                <ScanBarcodeIcon className="h-3.5 w-3.5" />
+              <TabsTrigger value="scan" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
+                <ScanBarcodeIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 Scan
               </TabsTrigger>
-              <TabsTrigger value="ai" className="flex-1 gap-1">
-                <SparklesIcon className="h-3.5 w-3.5" />
+              <TabsTrigger value="ai" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
+                <SparklesIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 AI
               </TabsTrigger>
             </TabsList>
