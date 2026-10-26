@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "cn";
 import { CheckIcon, PencilIcon, XIcon } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { FoodItemCard } from "./food-item-card";
 import type { ChatMessage } from "./types";
@@ -51,6 +52,8 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
     setEditing(false);
   }
 
+  const content = displayContent(message);
+
   return (
     <div className={cn("flex flex-col gap-2", isUser ? "items-end" : "items-start")}>
       {message.imageDataUrl && (
@@ -72,9 +75,8 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
         </div>
       )}
 
-      {message.content && (
+      {content && (
         <div className={cn("group relative max-w-[85%]", isUser && "flex items-start gap-1")}>
-          {/* Edit button — shown on hover for user messages */}
           {isUser && !editing && onEdit && (
             <Button
               variant="ghost"
@@ -109,16 +111,13 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
                 </Button>
               </div>
             </div>
+          ) : isUser ? (
+            <div className="rounded-2xl bg-primary text-primary-foreground px-3.5 py-2 text-sm whitespace-pre-wrap">
+              {content}
+            </div>
           ) : (
-            <div
-              className={cn(
-                "rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap",
-                isUser
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground",
-              )}
-            >
-              {displayContent(message)}
+            <div className="rounded-2xl bg-muted text-foreground px-3.5 py-2 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
+              <ReactMarkdown>{content}</ReactMarkdown>
             </div>
           )}
         </div>

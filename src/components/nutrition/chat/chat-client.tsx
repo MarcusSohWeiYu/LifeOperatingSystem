@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { analyzeFood } from "@/actions/chat";
+import { parseFoodItems } from "./parse-food-items";
 import { loadNutritionState, saveNutritionState, todayDateStr } from "../utils";
 import { getDefaultNutritionState } from "../mock-data";
 import { MEAL_LABELS } from "../types";
@@ -104,7 +104,7 @@ export function ChatClient() {
     setStagedFood(food);
   }
 
-  // ── Send message ──────────────────────────────────────────────────────
+  // ── Send message (streaming) ─────────────────────────────────────────
 
   const handleSend = useCallback(async (text: string, imageDataUrl?: string, attachedFood?: AttachedFood) => {
     if (!store.activeSessionId) return;
@@ -139,10 +139,8 @@ export function ChatClient() {
     // Clear staged food
     setStagedFood(null);
 
-    // Auto-title from text or food name
     const titleSource = text || attachedFood?.name || "Photo chat";
 
-    // Add user message and auto-title on first message
     setStore((s) =>
       updateSession(s, sessionId, (sess) => {
         const isFirst = sess.messages.length === 0;
@@ -157,36 +155,95 @@ export function ChatClient() {
 
     setSending(true);
 
-    // Build message history for the API
+    // Build message history for the streaming API
     const historyMessages = [...messages, userMsg].map((m) => ({
       role: m.role,
       content: m.content,
       imageDataUrl: m.imageDataUrl,
     }));
 
-    const result = await analyzeFood(historyMessages);
+    const assistantId = crypto.randomUUID();
 
-    if (!result.ok) {
-      toast.error(result.error);
-      setSending(false);
-      return;
-    }
-
-    const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: result.content,
-      foodItems: result.foodItems.length > 0 ? result.foodItems : undefined,
-      timestamp: new Date().toISOString(),
-    };
-
+    // Add empty assistant message that we'll stream into
     setStore((s) =>
       updateSession(s, sessionId, (sess) => ({
         ...sess,
-        messages: [...sess.messages, assistantMsg],
+        messages: [...sess.messages, {
+          id: assistantId,
+          role: "assistant" as const,
+          content: "",
+          timestamp: new Date().toISOString(),
+        }],
         updatedAt: new Date().toISOString(),
       })),
     );
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: historyMessages }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "AI request failed" })) as { error?: string };
+        toast.error(err.error ?? "AI request failed");
+        // Remove the empty assistant message
+        setStore((s) =>
+          updateSession(s, sessionId, (sess) => ({
+            ...sess,
+            messages: sess.messages.filter((m) => m.id !== assistantId),
+          })),
+        );
+        setSending(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        toast.error("Streaming not supported");
+        setSending(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        fullContent += decoder.decode(value, { stream: true });
+        const currentContent = fullContent;
+
+        // Update the assistant message with streamed content
+        setStore((s) =>
+          updateSession(s, sessionId, (sess) => ({
+            ...sess,
+            messages: sess.messages.map((m) =>
+              m.id === assistantId ? { ...m, content: currentContent } : m,
+            ),
+          })),
+        );
+      }
+
+      // Final update: parse food items from complete response
+      const foodItems = parseFoodItems(fullContent);
+      setStore((s) =>
+        updateSession(s, sessionId, (sess) => ({
+          ...sess,
+          messages: sess.messages.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: fullContent, foodItems: foodItems.length > 0 ? foodItems : undefined }
+              : m,
+          ),
+          updatedAt: new Date().toISOString(),
+        })),
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "AI request failed";
+      toast.error(msg);
+    }
 
     setSending(false);
   }, [store.activeSessionId, messages]);
