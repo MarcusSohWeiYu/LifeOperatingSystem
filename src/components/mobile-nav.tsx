@@ -40,10 +40,7 @@ export function MobileNav() {
             </Link>
           );
         })}
-        <div className="flex flex-col items-center gap-0.5 px-1.5 py-1">
-          <ModuleSwitcher compact />
-          <span className="text-[10px] text-muted-foreground font-medium">Switch</span>
-        </div>
+        <ModuleSwitcher compact />
       </div>
     </nav>
   );

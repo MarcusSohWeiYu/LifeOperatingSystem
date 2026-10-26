@@ -48,8 +48,8 @@ export function FoodEntryRow({ entry, saved, onEdit, onDelete, onToggleSave }: P
         {cals} cal
       </span>
 
-      {/* Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible on mobile (no hover), fade-in on desktop */}
+      <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         <Button
           variant="ghost"
           size="icon-xs"
