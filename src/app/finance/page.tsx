@@ -25,8 +25,6 @@ import { AllocationStrip } from "@/components/allocation-strip";
 import type { AllocationData } from "@/components/allocation-strip";
 import type { GoalHealth } from "@/lib/finance/goals";
 import type { ContributionRow } from "@/lib/sheets/schema";
-import { DashboardViewToggle } from "@/components/city/dashboard-view-toggle";
-import type { CityData } from "@/components/city/city-types";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -347,49 +345,6 @@ export default async function DashboardPage() {
 
   timelineItems.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // City data for 3D view
-  const cityData: CityData = {
-    finance: {
-      income: data.income.filter((i) => i.active).map((i) => ({
-        id: i.id,
-        name: i.name,
-        monthlyCents: toMonthlyCents(toCents(i.amount), i.frequency),
-        active: true,
-      })),
-      subscriptions: data.subscriptions.filter((s) => s.active).map((s) => ({
-        id: s.id,
-        name: s.name,
-        monthlyCents: toMonthlyCents(toCents(s.amount), s.frequency),
-        category: s.category,
-        renewingSoon: isRenewingSoon(
-          nextRenewalDate(s.nextRenewal, s.frequency, today),
-          today,
-          alertDays
-        ),
-        active: true,
-      })),
-      budget: data.budget.map((b) => ({
-        id: b.id,
-        category: b.category,
-        plannedMonthlyCents: toCents(b.plannedMonthly),
-        type: b.type,
-      })),
-      goals: activeGoals.map((g) => ({
-        id: g.id,
-        name: g.name,
-        type: g.type,
-        targetCents: g.targetCents,
-        savedCents: g.savedCents,
-        progress: g.progress,
-        health: g.health,
-        months: g.months,
-        requiredMonthlyCents: g.requiredMonthly,
-        priority: g.priority,
-      })),
-      allocation: allocationData,
-    },
-  };
-
   const allocSummary: AllocSummary = alloc;
   const headline = headlineText(allocSummary);
   const unallocatedColor =
@@ -400,9 +355,11 @@ export default async function DashboardPage() {
       : "";
 
   return (
-    <DashboardViewToggle cityData={cityData}>
+    <div className="space-y-6 p-4 md:p-6">
       {/* 1. Headline */}
       <section className="space-y-3">
+        <h1 className="text-xl font-semibold">This month&apos;s plan</h1>
+
         <div className="flex flex-wrap gap-3">
           <div className="inline-block rounded-xl border bg-card p-4 ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">Monthly income</p>
@@ -622,6 +579,6 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
-    </DashboardViewToggle>
+    </div>
   );
 }
