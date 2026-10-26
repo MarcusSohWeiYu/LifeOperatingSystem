@@ -18,6 +18,8 @@ export type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Hide from the mobile bottom nav bar (still shows in sidebar) */
+  mobileHidden?: boolean;
 };
 
 export type ModuleConfig = {
@@ -52,7 +54,7 @@ export const modules: ModuleConfig[] = [
       { href: "/fitness", label: "Dashboard", icon: LayoutDashboard },
       { href: "/fitness/workouts", label: "Workouts", icon: Activity },
       { href: "/fitness/nutrition", label: "Nutrition", icon: UtensilsCrossed },
-      { href: "/fitness/nutrition/chat", label: "AI Chat", icon: SparklesIcon },
+      { href: "/fitness/nutrition/chat", label: "AI Chat", icon: SparklesIcon, mobileHidden: true },
       { href: "/fitness/stats", label: "Stats", icon: BarChart3 },
     ],
   },

@@ -14,7 +14,7 @@ export default function AiChatPage() {
 
   return (
     <div className={cn(
-      "fixed inset-0 bg-card z-10 transition-[left] duration-200",
+      "fixed inset-0 bottom-14 md:bottom-0 bg-card z-10 transition-[left] duration-200",
       collapsed ? "md:left-14" : "md:left-56",
     )}>
       <ChatClient />
