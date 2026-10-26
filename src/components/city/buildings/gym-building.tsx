@@ -1,6 +1,8 @@
 "use client";
-import { useState, memo } from "react";
-import { Html } from "@react-three/drei";
+import { useState, useRef, memo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
+import type { Group } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 
 const COLOR = "#c878b8";
@@ -10,61 +12,97 @@ type Props = {
   position: [number, number, number];
   caloriesConsumed: number;
   caloriesTarget: number;
-  onNavigate: (href: string) => void;
+  proteinG: number;
+  selected: boolean;
+  onSelect: () => void;
 };
 
-function GymBuildingInner({ position, caloriesConsumed, caloriesTarget, onNavigate }: Props) {
+function GymBuildingInner({ position, caloriesConsumed, caloriesTarget, proteinG, selected, onSelect }: Props) {
   const [hovered, setHovered] = useState(false);
-  const progress = caloriesTarget > 0 ? Math.min(1, caloriesConsumed / caloriesTarget) : 0;
-  const pct = Math.round(progress * 100);
+  const groupRef = useRef<Group>(null);
+
+  // Suppress unused-var warning — proteinG flows to stats card via onSelect
+  void proteinG;
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.7 + 1.2) * 0.02;
+    }
+  });
 
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position}>
       {/* Main gym body */}
-      <mesh
+      <RoundedBox
+        args={[1.1, 1.0, 0.9]}
+        radius={0.1}
+        smoothness={3}
+        position={[0, 0.5, 0]}
         castShadow
         receiveShadow
-        position={[0, 0.5, 0]}
-        onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHovered(true); }}
-        onPointerOut={() => setHovered(false)}
-        onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onNavigate("/fitness/nutrition"); }}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = "auto";
+        }}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          onSelect();
+        }}
       >
-        <boxGeometry args={[1.1, 1.0, 0.9]} />
         <meshStandardMaterial
           color={COLOR}
           emissive={COLOR}
-          emissiveIntensity={hovered ? 0.25 : 0}
+          emissiveIntensity={selected ? 0.35 : hovered ? 0.15 : 0}
         />
-      </mesh>
-      {/* Flat roof with slight overhang */}
-      <mesh position={[0, 1.05, 0]}>
-        <boxGeometry args={[1.2, 0.1, 1.0]} />
+      </RoundedBox>
+
+      {/* Flat roof with overhang */}
+      <RoundedBox
+        args={[1.22, 0.1, 1.0]}
+        radius={0.05}
+        smoothness={2}
+        position={[0, 1.05, 0]}
+      >
         <meshStandardMaterial color={ROOF_COLOR} />
-      </mesh>
-      {/* Side entrance */}
-      <mesh position={[0, 0.25, 0.46]}>
-        <boxGeometry args={[0.3, 0.5, 0.04]} />
+      </RoundedBox>
+
+      {/* Entrance door panel */}
+      <RoundedBox
+        args={[0.3, 0.5, 0.04]}
+        radius={0.02}
+        smoothness={2}
+        position={[0, 0.25, 0.47]}
+      >
         <meshStandardMaterial color="#f0e0f0" transparent opacity={0.6} />
+      </RoundedBox>
+
+      {/* Dumbbell decoration – left sphere */}
+      <mesh position={[-0.28, 1.18, 0]}>
+        <sphereGeometry args={[0.1, 8, 6]} />
+        <meshStandardMaterial color="#888888" />
+      </mesh>
+      {/* Dumbbell decoration – bar */}
+      <mesh position={[0, 1.18, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.025, 0.025, 0.56, 6]} />
+        <meshStandardMaterial color="#aaaaaa" />
+      </mesh>
+      {/* Dumbbell decoration – right sphere */}
+      <mesh position={[0.28, 1.18, 0]}>
+        <sphereGeometry args={[0.1, 8, 6]} />
+        <meshStandardMaterial color="#888888" />
       </mesh>
 
-      {hovered && (
-        <Html
-          position={[0, 1.8, 0]}
-          center
-          distanceFactor={10}
-          style={{ pointerEvents: "none" }}
-        >
-          <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg" style={{ whiteSpace: "nowrap" }}>
-            <p className="font-medium">Fitness · Nutrition</p>
-            {caloriesTarget > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {caloriesConsumed} / {caloriesTarget} kcal ({pct}%)
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">No nutrition data today</p>
-            )}
-          </div>
-        </Html>
+      {/* Calorie progress strip on front face */}
+      {caloriesTarget > 0 && (
+        <mesh position={[0, 0.5 * Math.min(1, caloriesConsumed / caloriesTarget), 0.46]}>
+          <boxGeometry args={[0.06, caloriesConsumed / caloriesTarget * 0.9, 0.01]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.4} transparent opacity={0.6} />
+        </mesh>
       )}
     </group>
   );

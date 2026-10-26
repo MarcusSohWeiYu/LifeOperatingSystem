@@ -1,9 +1,8 @@
 "use client";
 import { useState, memo } from "react";
-import { Html } from "@react-three/drei";
+import { RoundedBox } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { CityBudgetBuilding } from "../city-types";
-import { formatSGD } from "@/lib/finance/money";
 
 const TYPE_COLORS = {
   needs: "#7ab0e0",
@@ -24,10 +23,11 @@ function clamp(v: number, lo: number, hi: number) {
 type Props = {
   building: CityBudgetBuilding;
   position: [number, number, number];
-  onNavigate: (href: string) => void;
+  selected: boolean;
+  onSelect: () => void;
 };
 
-function BudgetBuildingInner({ building, position, onNavigate }: Props) {
+function BudgetBuildingInner({ building, position, selected, onSelect }: Props) {
   const [hovered, setHovered] = useState(false);
   const color = TYPE_COLORS[building.type];
   const roofColor = TYPE_ROOF_COLORS[building.type];
@@ -36,39 +36,53 @@ function BudgetBuildingInner({ building, position, onNavigate }: Props) {
   return (
     <group position={position}>
       {/* Main body */}
-      <mesh
+      <RoundedBox
+        args={[0.68, h, 0.68]}
+        radius={0.08}
+        smoothness={3}
+        position={[0, h / 2, 0]}
         castShadow
         receiveShadow
-        position={[0, h / 2, 0]}
-        onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHovered(true); }}
-        onPointerOut={() => setHovered(false)}
-        onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onNavigate("/finance/budget"); }}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = "auto";
+        }}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          onSelect();
+        }}
       >
-        <boxGeometry args={[0.65, h, 0.65]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 0.25 : 0}
+          emissiveIntensity={selected ? 0.35 : hovered ? 0.15 : 0}
         />
-      </mesh>
-      {/* Slanted roof */}
-      <mesh position={[0, h + 0.22, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[0.52, 0.44, 4]} />
+      </RoundedBox>
+
+      {/* Flat roof slab */}
+      <RoundedBox
+        args={[0.78, 0.08, 0.78]}
+        radius={0.04}
+        smoothness={2}
+        position={[0, h + 0.04, 0]}
+      >
         <meshStandardMaterial color={roofColor} />
-      </mesh>
-      {hovered && (
-        <Html
-          position={[0, h + 0.9, 0]}
-          center
-          distanceFactor={10}
-          style={{ pointerEvents: "none" }}
-        >
-          <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg" style={{ whiteSpace: "nowrap" }}>
-            <p className="font-medium">{building.category}</p>
-            <p className="text-xs text-muted-foreground capitalize">{building.type} · {formatSGD(building.plannedMonthlyCents)}/mo</p>
-          </div>
-        </Html>
-      )}
+      </RoundedBox>
+
+      {/* Rooftop AC unit */}
+      <RoundedBox
+        args={[0.22, 0.14, 0.18]}
+        radius={0.03}
+        smoothness={2}
+        position={[0.15, h + 0.15, 0]}
+      >
+        <meshStandardMaterial color="#c8c0b8" />
+      </RoundedBox>
     </group>
   );
 }

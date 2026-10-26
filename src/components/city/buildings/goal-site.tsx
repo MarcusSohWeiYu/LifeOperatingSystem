@@ -1,9 +1,10 @@
 "use client";
-import { useState, memo } from "react";
-import { Html } from "@react-three/drei";
+import { useState, useRef, memo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
+import type { Group } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { CityGoalSite } from "../city-types";
-import { formatSGD } from "@/lib/finance/money";
 
 const HEALTH_COLORS = {
   reached: "#6bc99a",
@@ -19,57 +20,82 @@ function clamp(v: number, lo: number, hi: number) {
 type Props = {
   site: CityGoalSite;
   position: [number, number, number];
-  onNavigate: (href: string) => void;
+  selected: boolean;
+  onSelect: () => void;
 };
 
-function GoalSiteInner({ site, position, onNavigate }: Props) {
+function GoalSiteInner({ site, position, selected, onSelect }: Props) {
   const [hovered, setHovered] = useState(false);
+  const craneRef = useRef<Group>(null);
   const color = HEALTH_COLORS[site.health];
   const totalH = clamp(site.targetCents / 300_000, 0.6, 4.0);
-  const filledH = Math.max(0.05, (site.progress / 100) * totalH);
+  const filledH = Math.max(0.08, (site.progress / 100) * totalH);
   const remainH = Math.max(0, totalH - filledH);
-  const isStrugglingHealth = site.health === "behind" || site.health === "overdue";
+  const isStruggling = site.health === "behind" || site.health === "overdue";
+
+  useFrame((state) => {
+    if (craneRef.current && isStruggling) {
+      craneRef.current.rotation.y = state.clock.elapsedTime * 0.4;
+    }
+  });
+
+  const pointerHandlers = {
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      setHovered(true);
+      document.body.style.cursor = "pointer";
+    },
+    onPointerOut: () => {
+      setHovered(false);
+      document.body.style.cursor = "auto";
+    },
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      e.stopPropagation();
+      onSelect();
+    },
+  };
 
   return (
     <group position={position}>
       {/* Filled / completed portion */}
-      <mesh
+      <RoundedBox
+        args={[0.75, filledH, 0.75]}
+        radius={0.08}
+        smoothness={3}
+        position={[0, filledH / 2, 0]}
         castShadow
         receiveShadow
-        position={[0, filledH / 2, 0]}
-        onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHovered(true); }}
-        onPointerOut={() => setHovered(false)}
-        onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onNavigate(`/finance/goals/${site.id}`); }}
+        {...pointerHandlers}
       >
-        <boxGeometry args={[0.75, filledH, 0.75]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 0.3 : 0}
+          emissiveIntensity={selected ? 0.35 : hovered ? 0.15 : 0}
         />
-      </mesh>
+      </RoundedBox>
 
       {/* Remaining ghost portion */}
       {remainH > 0.08 && (
-        <mesh position={[0, filledH + remainH / 2, 0]}>
-          <boxGeometry args={[0.75, remainH, 0.75]} />
+        <RoundedBox
+          args={[0.75, remainH, 0.75]}
+          radius={0.08}
+          smoothness={3}
+          position={[0, filledH + remainH / 2, 0]}
+          {...pointerHandlers}
+        >
           <meshStandardMaterial color={color} transparent opacity={0.18} />
-        </mesh>
+        </RoundedBox>
       )}
 
-      {/* Scaffold pole for behind/overdue goals */}
-      {isStrugglingHealth && (
-        <group>
-          <mesh position={[0.46, totalH * 0.65, 0.46]}>
-            <cylinderGeometry args={[0.03, 0.03, totalH * 1.1, 5]} />
+      {/* Crane for behind/overdue goals */}
+      {isStruggling && (
+        <group ref={craneRef} position={[0, totalH * 0.5, 0]}>
+          <mesh position={[0.46, totalH * 0.3, 0.46]}>
+            <cylinderGeometry args={[0.03, 0.035, totalH * 0.6, 5]} />
             <meshStandardMaterial color="#b0a090" />
           </mesh>
-          {/* Crane arm */}
-          <mesh
-            position={[0.25, totalH * 1.15, 0.25]}
-            rotation={[0, Math.PI / 4, -Math.PI / 6]}
-          >
-            <cylinderGeometry args={[0.02, 0.02, 0.55, 5]} />
+          <mesh position={[0.3, totalH * 0.6, 0.3]} rotation={[0, 0, -Math.PI / 5]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.6, 5]} />
             <meshStandardMaterial color="#b0a090" />
           </mesh>
         </group>
@@ -80,32 +106,13 @@ function GoalSiteInner({ site, position, onNavigate }: Props) {
         <group>
           <mesh position={[0, totalH + 0.35, 0]}>
             <cylinderGeometry args={[0.025, 0.025, 0.7, 5]} />
-            <meshStandardMaterial color="#888" />
+            <meshStandardMaterial color="#888888" />
           </mesh>
           <mesh position={[0.16, totalH + 0.6, 0]}>
             <boxGeometry args={[0.32, 0.16, 0.025]} />
             <meshStandardMaterial color="#6bc99a" />
           </mesh>
         </group>
-      )}
-
-      {hovered && (
-        <Html
-          position={[0, totalH + 1.0, 0]}
-          center
-          distanceFactor={10}
-          style={{ pointerEvents: "none" }}
-        >
-          <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg" style={{ whiteSpace: "nowrap" }}>
-            <p className="font-medium">{site.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {site.progress}% · {formatSGD(site.savedCents)} / {formatSGD(site.targetCents)}
-            </p>
-            {site.months > 0 && (
-              <p className="text-xs text-muted-foreground">{site.months} months left</p>
-            )}
-          </div>
-        </Html>
       )}
     </group>
   );
