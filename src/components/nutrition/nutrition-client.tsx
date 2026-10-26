@@ -237,8 +237,7 @@ export function NutritionClient() {
 
   // ── Date nav ─────────────────────────────────────────────────────────────
 
-  function handlePrev() { setSelectedDate((d) => shiftDate(d, -1)); }
-  function handleNext() { setSelectedDate((d) => shiftDate(d, 1)); }
+  function handleSelectDate(d: string) { setSelectedDate(d); }
   function handleToday() { setSelectedDate(todayDateStr()); }
 
   // ── Dialog helpers ────────────────────────────────────────────────────────
@@ -251,8 +250,7 @@ export function NutritionClient() {
     <div className="space-y-4">
       <DateNavigator
         date={selectedDate}
-        onPrev={handlePrev}
-        onNext={handleNext}
+        onSelect={handleSelectDate}
         onToday={handleToday}
       />
 
