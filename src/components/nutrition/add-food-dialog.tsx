@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookmarkIcon, ScanBarcodeIcon, SearchIcon, SparklesIcon, ZapIcon } from "lucide-react";
+import { BookmarkIcon, ScanBarcodeIcon, SearchIcon, ZapIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +20,9 @@ import type { FoodProduct } from "@/actions/nutrition";
 import { SearchTab } from "./search-tab";
 import { QuickAddTab } from "./quick-add-tab";
 import { BarcodeScannerTab } from "./barcode-scanner-tab";
-import { AiScanTab } from "./ai-scan-tab";
 import { SavedTab } from "./saved-tab";
 
-export type AddFoodTab = "saved" | "search" | "quick-add" | "scan" | "ai";
+export type AddFoodTab = "saved" | "search" | "quick-add" | "scan";
 
 type Props = {
   open: boolean;
@@ -89,10 +88,6 @@ export function AddFoodDialog({
                 <ScanBarcodeIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
                 Scan
               </TabsTrigger>
-              <TabsTrigger value="ai" className="flex-1 gap-1 px-1 text-xs sm:text-sm">
-                <SparklesIcon className="hidden sm:block h-3.5 w-3.5 shrink-0" />
-                AI
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -126,9 +121,6 @@ export function AddFoodDialog({
             />
           </TabsContent>
 
-          <TabsContent value="ai" className="px-4 pb-4">
-            <AiScanTab />
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
