@@ -1,44 +1,91 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
-import { useRouter } from "next/navigation";
+import type { DirectionalLight } from "three";
 import { Ground } from "./ground";
 import { FinanceDistrict } from "./district-finance";
 import { FitnessDistrict } from "./district-fitness";
 import { Decorations } from "./decorations";
-import type { CityData } from "./city-types";
+import { StatsCard } from "./stats-card";
+import type { CityData, SelectedBuilding } from "./city-types";
+
+type Selection = {
+  id: string;
+  pos: [number, number, number];
+  building: SelectedBuilding;
+};
 
 type Props = {
   data: CityData;
 };
 
 export function CityScene({ data }: Props) {
-  const router = useRouter();
+  const [selected, setSelected] = useState<Selection | null>(null);
+  const lightRef = useRef<DirectionalLight>(null);
 
-  function navigate(href: string) {
-    router.push(href);
+  useEffect(() => {
+    if (!lightRef.current) return;
+    lightRef.current.shadow.mapSize.width = 1024;
+    lightRef.current.shadow.mapSize.height = 1024;
+    lightRef.current.shadow.camera.near = 0.5;
+    lightRef.current.shadow.camera.far = 60;
+    lightRef.current.shadow.camera.left = -18;
+    lightRef.current.shadow.camera.right = 18;
+    lightRef.current.shadow.camera.top = 14;
+    lightRef.current.shadow.camera.bottom = -14;
+    lightRef.current.shadow.camera.updateProjectionMatrix();
+  }, []);
+
+  function handleSelect(id: string, pos: [number, number, number], building: SelectedBuilding) {
+    setSelected((prev) => (prev?.id === id ? null : { id, pos, building }));
   }
 
   return (
-    <div className="relative h-[520px] w-full overflow-hidden rounded-xl border bg-gradient-to-b from-sky-100 to-blue-50 dark:from-slate-800 dark:to-slate-900">
-      <Canvas gl={{ antialias: true }} shadows>
+    <div className="relative h-[540px] w-full overflow-hidden rounded-xl border bg-gradient-to-b from-sky-100 to-blue-50 dark:from-slate-800 dark:to-slate-900">
+      <Canvas
+        gl={{ antialias: true }}
+        shadows
+        onPointerMissed={() => setSelected(null)}
+      >
         <OrthographicCamera
           makeDefault
           position={[12, 10, 12]}
-          zoom={34}
+          zoom={30}
           near={0.1}
           far={300}
         />
-        <ambientLight intensity={0.75} />
+
+        {/* Lighting */}
+        <ambientLight intensity={0.5} />
+        <hemisphereLight args={["#b0d0ff", "#c8e8c0", 0.6]} />
         <directionalLight
+          ref={lightRef}
           position={[8, 14, 8]}
           intensity={1.0}
           castShadow
         />
+
         <Ground />
-        <FinanceDistrict data={data.finance} onNavigate={navigate} />
-        <FitnessDistrict onNavigate={navigate} />
+        <FinanceDistrict
+          data={data.finance}
+          selectedId={selected?.id ?? null}
+          onSelect={handleSelect}
+        />
+        <FitnessDistrict
+          selectedId={selected?.id ?? null}
+          onSelect={handleSelect}
+        />
         <Decorations />
+
+        {selected && (
+          <StatsCard
+            pos={selected.pos}
+            building={selected.building}
+            onClose={() => setSelected(null)}
+          />
+        )}
+
         <OrbitControls
           enablePan={false}
           minPolarAngle={Math.PI / 7}
@@ -49,28 +96,6 @@ export function CityScene({ data }: Props) {
           dampingFactor={0.06}
         />
       </Canvas>
-
-      {/* Legend overlay */}
-      <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2 flex-wrap">
-        {[
-          { color: "#5a9be8", label: "Income" },
-          { color: "#7abde8", label: "Goals" },
-          { color: "#b07ae0", label: "Budget" },
-          { color: "#d0c8d0", label: "Subscriptions" },
-          { color: "#c878b8", label: "Fitness" },
-        ].map(({ color, label }) => (
-          <div
-            key={label}
-            className="flex items-center gap-1.5 rounded-full border bg-card/80 px-2 py-0.5 text-xs backdrop-blur-sm"
-          >
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: color }}
-            />
-            {label}
-          </div>
-        ))}
-      </div>
 
       {/* Hint */}
       <p className="pointer-events-none absolute bottom-3 right-3 text-xs text-muted-foreground/60">
