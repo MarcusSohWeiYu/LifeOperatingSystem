@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { ImageIcon, SendIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
+import { ImageIcon, MicIcon, MicOffIcon, SendIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AttachedFood } from "./types";
 
@@ -16,8 +16,45 @@ type Props = {
 export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFood }: Props) {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  function toggleSpeech() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-SG";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? "";
+      if (transcript) {
+        setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
+
+  const [hasSpeech] = useState(() =>
+    typeof window !== "undefined" &&
+    !!(window.SpeechRecognition ?? window.webkitSpeechRecognition),
+  );
 
   function attachImage(file: File) {
     import("./image-utils").then(({ resizeImageToDataUrl }) => {
@@ -139,6 +176,19 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
             title="Import food"
           >
             <UtensilsCrossedIcon className="h-5 w-5" />
+          </Button>
+        )}
+
+        {hasSpeech && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSpeech}
+            disabled={disabled}
+            title={listening ? "Stop listening" : "Voice input"}
+            className={listening ? "text-red-500 animate-pulse" : ""}
+          >
+            {listening ? <MicOffIcon className="h-5 w-5" /> : <MicIcon className="h-5 w-5" />}
           </Button>
         )}
 
