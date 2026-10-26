@@ -76,7 +76,7 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
       )}
 
       {content && (
-        <div className={cn("group relative max-w-[85%]", isUser && "flex items-start gap-1")}>
+        <div className={cn("group relative", isUser ? "flex items-start gap-1 max-w-[85%]" : "w-full")}>
           {isUser && !editing && onEdit && (
             <Button
               variant="ghost"
@@ -124,7 +124,7 @@ export function MessageBubble({ message, onLogFood, onEdit }: Props) {
       )}
 
       {message.foodItems && message.foodItems.length > 0 && (
-        <div className="w-full max-w-[85%] space-y-2">
+        <div className="w-full space-y-2">
           {message.foodItems.map((item, i) => (
             <FoodItemCard
               key={i}
