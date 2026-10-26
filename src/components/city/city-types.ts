@@ -60,3 +60,10 @@ export type CityFinanceData = {
 export type CityData = {
   finance: CityFinanceData;
 };
+
+export type SelectedBuilding =
+  | { kind: "income"; building: CityIncomeBuilding }
+  | { kind: "subscription"; shop: CitySubscriptionShop }
+  | { kind: "budget"; building: CityBudgetBuilding }
+  | { kind: "goal"; site: CityGoalSite }
+  | { kind: "gym"; calories: number; target: number; proteinG: number };
