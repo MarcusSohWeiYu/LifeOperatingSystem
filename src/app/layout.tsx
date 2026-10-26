@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SidebarProvider } from "@/components/sidebar-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -32,7 +33,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/sidebar-context";
 
 const ChatClient = dynamic(
   () => import("@/components/nutrition/chat/chat-client").then((m) => m.ChatClient),
@@ -8,10 +10,13 @@ const ChatClient = dynamic(
 );
 
 export default function AiChatPage() {
-  // Fixed positioning to fill the viewport next to the sidebar,
-  // breaking out of the parent layout's container constraints.
+  const { collapsed } = useSidebar();
+
   return (
-    <div className="fixed inset-0 md:left-56 bg-card z-10">
+    <div className={cn(
+      "fixed inset-0 bg-card z-10 transition-[left] duration-200",
+      collapsed ? "md:left-14" : "md:left-56",
+    )}>
       <ChatClient />
     </div>
   );
