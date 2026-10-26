@@ -56,13 +56,16 @@ export function NutritionClient() {
   }
 
   function upsertEntries(newEntries: FoodEntry[]) {
-    setState((s) => ({
-      ...s,
-      logs: {
-        ...s.logs,
-        [selectedDate]: { date: selectedDate, entries: newEntries },
-      },
-    }));
+    setState((s) => {
+      const existing = s.logs[selectedDate];
+      return {
+        ...s,
+        logs: {
+          ...s.logs,
+          [selectedDate]: { ...existing, date: selectedDate, entries: newEntries },
+        },
+      };
+    });
   }
 
   function nextId(): string {

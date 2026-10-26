@@ -3,12 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
   CartesianGrid,
 } from "recharts";
 import {
@@ -18,18 +17,23 @@ import {
   TrendingUpIcon,
   ScaleIcon,
   Settings2Icon,
+  HeartPulseIcon,
+  PlusIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { NutritionState, BodyStats } from "./types";
+import type { NutritionState, BodyStats, WeightEntry } from "./types";
 import { loadNutritionState, saveNutritionState, todayDateStr } from "./utils";
 import { getDefaultNutritionState } from "./mock-data";
 import { BodyStatsDialog } from "./body-stats-dialog";
+import { LogDayDialog } from "./log-day-dialog";
 import {
   computeWeeklyStats,
-  buildTrendData,
   bmrCalories,
   tdeeCalories,
+  bmi,
+  bmiCategory,
+  dailyBalance,
 } from "./stats-utils";
 
 export function StatsClient() {
@@ -44,6 +48,7 @@ export function StatsClient() {
   });
 
   const [bodyStatsOpen, setBodyStatsOpen] = useState(false);
+  const [logDayDate, setLogDayDate] = useState<string | null>(null);
 
   useEffect(() => {
     saveNutritionState(state);
@@ -53,20 +58,60 @@ export function StatsClient() {
     setState((s) => ({ ...s, bodyStats: stats }));
   }
 
+  function handleLogDay(steps: number, workoutCals: number) {
+    if (!logDayDate) return;
+    setState((prev) => {
+      const log = prev.logs[logDayDate] ?? { date: logDayDate, entries: [] };
+      return {
+        ...prev,
+        logs: {
+          ...prev.logs,
+          [logDayDate]: { ...log, steps, workoutCalsBurned: workoutCals },
+        },
+      };
+    });
+  }
+
   const today = todayDateStr();
   const weekly = useMemo(
     () => computeWeeklyStats(today, state.logs, state.goals, state.bodyStats),
     [today, state.logs, state.goals, state.bodyStats],
   );
 
-  const trendData = useMemo(
-    () => buildTrendData(today, 4, state.logs, state.goals, state.bodyStats),
-    [today, state.logs, state.goals, state.bodyStats],
-  );
+  const weightData = useMemo(() => {
+    const entries = state.weightLog ?? [];
+    return entries
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((e) => ({ date: e.date, label: e.date.slice(5), kg: e.weightKg }));
+  }, [state.weightLog]);
+
+  const [weightInput, setWeightInput] = useState("");
+  const [showWeightInput, setShowWeightInput] = useState(false);
+
+  function handleLogWeight() {
+    const kg = parseFloat(weightInput);
+    if (isNaN(kg) || kg <= 0) return;
+    setState((prev) => {
+      const existing = prev.weightLog ?? [];
+      const filtered = existing.filter((e) => e.date !== today);
+      const entry: WeightEntry = { date: today, weightKg: kg };
+      return { ...prev, weightLog: [...filtered, entry] };
+    });
+    setWeightInput("");
+    setShowWeightInput(false);
+  }
 
   const hasBodyStats = !!state.bodyStats;
   const tdee = hasBodyStats ? tdeeCalories(state.bodyStats!) : null;
   const bmr = hasBodyStats ? bmrCalories(state.bodyStats!) : null;
+  const bmiValue = hasBodyStats ? bmi(state.bodyStats!.weightKg, state.bodyStats!.heightCm) : null;
+  const bmiCat = bmiValue !== null ? bmiCategory(bmiValue) : null;
+
+  const logDayLog = logDayDate ? state.logs[logDayDate] : undefined;
+  const logDayBalance = logDayDate && state.bodyStats
+    ? dailyBalance(logDayLog, state.bodyStats)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -158,9 +203,9 @@ export function StatsClient() {
         )}
       </div>
 
-      {/* TDEE / BMR info */}
+      {/* TDEE / BMR / BMI info */}
       {hasBodyStats && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border bg-card p-3 space-y-0.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">BMR (rest)</p>
             <p className="text-lg font-bold tabular-nums">{bmr?.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">cal</span></p>
@@ -168,6 +213,21 @@ export function StatsClient() {
           <div className="rounded-xl border bg-card p-3 space-y-0.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">TDEE (active)</p>
             <p className="text-lg font-bold tabular-nums">{tdee?.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">cal</span></p>
+          </div>
+          <div className="rounded-xl border bg-card p-3 space-y-0.5">
+            <div className="flex items-center gap-1">
+              <HeartPulseIcon className="h-3 w-3 text-muted-foreground" />
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">BMI</p>
+            </div>
+            <p className="text-lg font-bold tabular-nums">{bmiValue}</p>
+            <p className={cn(
+              "text-[10px] font-medium",
+              bmiCat === "Normal" ? "text-emerald-600 dark:text-emerald-400"
+                : bmiCat === "Underweight" ? "text-amber-600 dark:text-amber-400"
+                : "text-red-600 dark:text-red-400",
+            )}>
+              {bmiCat}
+            </p>
           </div>
         </div>
       )}
@@ -200,24 +260,55 @@ export function StatsClient() {
         </div>
       </div>
 
-      {/* Calorie Trend Chart (last 4 weeks) */}
+      {/* Weight Trend Chart */}
       <div className="rounded-xl border bg-card p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Calorie Trend (4 weeks)</h3>
-        {trendData.length > 0 ? (
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Weight Trend</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 text-xs h-7"
+            onClick={() => setShowWeightInput((v) => !v)}
+          >
+            <PlusIcon className="h-3 w-3" />
+            Log Weight
+          </Button>
+        </div>
+
+        {showWeightInput && (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder={hasBodyStats ? String(state.bodyStats!.weightKg) : "70.0"}
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleLogWeight(); }}
+              className="w-24 rounded-md border bg-transparent px-2 py-1 text-base md:text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <span className="text-xs text-muted-foreground">kg</span>
+            <Button size="sm" className="h-7" onClick={handleLogWeight}>
+              Save
+            </Button>
+          </div>
+        )}
+
+        {weightData.length >= 2 ? (
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trendData} barCategoryGap="15%">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <LineChart data={weightData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
-                  dataKey="dayLabel"
-                  tick={{ fontSize: 9 }}
+                  dataKey="label"
+                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                   interval="preserveStartEnd"
-                  className="fill-muted-foreground"
+                  stroke="hsl(var(--border))"
                 />
                 <YAxis
-                  tick={{ fontSize: 10 }}
-                  width={40}
-                  className="fill-muted-foreground"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  width={36}
+                  stroke="hsl(var(--border))"
+                  domain={["dataMin - 1", "dataMax + 1"]}
                 />
                 <Tooltip
                   contentStyle={{
@@ -225,31 +316,27 @@ export function StatsClient() {
                     border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "hsl(var(--popover-foreground))",
                   }}
-                  labelStyle={{ fontWeight: 600 }}
-                  formatter={(value, name) => {
-                    if (name === "calories") return [`${value} cal`, "Intake"];
-                    return [String(value), String(name)];
-                  }}
+                  labelStyle={{ fontWeight: 600, color: "hsl(var(--popover-foreground))" }}
+                  formatter={(value) => [`${value} kg`, "Weight"]}
                 />
-                <ReferenceLine
-                  y={state.goals.calories}
+                <Line
+                  type="monotone"
+                  dataKey="kg"
                   stroke="hsl(var(--primary))"
-                  strokeDasharray="4 4"
-                  label={{ value: "Goal", fontSize: 10, fill: "hsl(var(--primary))" }}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar
-                  dataKey="calories"
-                  radius={[3, 3, 0, 0]}
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.7}
-                />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground text-center py-8">
-            No data yet — start logging food to see trends.
+            {weightData.length === 1
+              ? "One entry so far — log another day to see the trend."
+              : "No weight entries yet — log your weight to see the trend."}
           </p>
         )}
       </div>
@@ -262,27 +349,43 @@ export function StatsClient() {
             {weekly.days.map((day) => {
               const isDeficit = day.deficit >= 0;
               return (
-                <div key={day.date} className="flex items-center gap-3 text-xs">
-                  <span className="w-16 text-muted-foreground tabular-nums shrink-0">
-                    {day.date.slice(5)}
-                  </span>
-                  <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden relative">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        isDeficit ? "bg-emerald-500/70" : "bg-red-500/70",
-                      )}
-                      style={{
-                        width: `${Math.min(100, (Math.abs(day.deficit) / (day.tdee || 1)) * 100)}%`,
-                      }}
-                    />
+                <div key={day.date} className="space-y-1">
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="w-16 text-muted-foreground tabular-nums shrink-0">
+                      {day.date.slice(5)}
+                    </span>
+                    <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden relative">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          isDeficit ? "bg-emerald-500/70" : "bg-red-500/70",
+                        )}
+                        style={{
+                          width: `${Math.min(100, (Math.abs(day.deficit) / (day.tdee || 1)) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className={cn(
+                      "w-20 text-right tabular-nums font-medium shrink-0",
+                      isDeficit ? "text-emerald-600 dark:text-emerald-400" : "text-red-500",
+                    )}>
+                      {isDeficit ? "-" : "+"}{Math.abs(day.deficit)} cal
+                    </span>
+                    <button
+                      type="button"
+                      className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setLogDayDate(day.date)}
+                      title="Log steps & workout"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <span className={cn(
-                    "w-20 text-right tabular-nums font-medium shrink-0",
-                    isDeficit ? "text-emerald-600 dark:text-emerald-400" : "text-red-500",
-                  )}>
-                    {isDeficit ? "-" : "+"}{Math.abs(day.deficit)} cal
-                  </span>
+                  {(day.stepsBurned > 0 || day.workoutBurned > 0) && (
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground ml-[76px]">
+                      {day.stepsBurned > 0 && <span>🚶 {day.stepsBurned} cal</span>}
+                      {day.workoutBurned > 0 && <span>🏋️ {day.workoutBurned} cal</span>}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -296,6 +399,19 @@ export function StatsClient() {
         stats={state.bodyStats}
         onSave={handleSaveBodyStats}
       />
+
+      {logDayBalance && logDayDate && (
+        <LogDayDialog
+          key={logDayDate}
+          open={!!logDayDate}
+          onOpenChange={(open) => { if (!open) setLogDayDate(null); }}
+          date={logDayDate}
+          balance={logDayBalance}
+          currentSteps={logDayLog?.steps ?? 0}
+          currentWorkoutCals={logDayLog?.workoutCalsBurned ?? 0}
+          onSave={handleLogDay}
+        />
+      )}
     </div>
   );
 }

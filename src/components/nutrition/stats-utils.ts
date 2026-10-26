@@ -29,6 +29,19 @@ export function stepCalories(steps: number, weightKg: number): number {
   return Math.round(steps * 0.04 * (weightKg / 70));
 }
 
+/** BMI = weight(kg) / height(m)² */
+export function bmi(weightKg: number, heightCm: number): number {
+  const heightM = heightCm / 100;
+  return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+}
+
+export function bmiCategory(value: number): string {
+  if (value < 18.5) return "Underweight";
+  if (value < 25) return "Normal";
+  if (value < 30) return "Overweight";
+  return "Obese";
+}
+
 // ── Deficit / Surplus ────────────────────────────────────────────────────────
 
 export type DailyBalance = {
@@ -36,8 +49,10 @@ export type DailyBalance = {
   intake: number;
   bmr: number;
   stepsBurned: number;
+  workoutBurned: number;
   tdee: number;
   deficit: number; // positive = deficit (losing weight), negative = surplus
+  hasLog: boolean;
 };
 
 export function dailyBalance(
@@ -49,15 +64,19 @@ export function dailyBalance(
   const tdee = tdeeCalories(stats);
   const steps = log?.steps ?? 0;
   const burned = stepCalories(steps, stats.weightKg);
-  const totalBurn = tdee + burned;
+  const workout = log?.workoutCalsBurned ?? 0;
+  const totalBurn = tdee + burned + workout;
+  const hasLog = !!log && log.entries.length > 0;
 
   return {
     date: log?.date ?? "",
     intake,
     bmr,
     stepsBurned: burned,
+    workoutBurned: workout,
     tdee: totalBurn,
     deficit: totalBurn - intake,
+    hasLog,
   };
 }
 
@@ -144,8 +163,9 @@ export function computeWeeklyStats(
     ? Math.round(entries.reduce((s, e) => s + e.fat, 0) / entries.length * 10) / 10
     : 0;
 
-  const totalDeficit = days.reduce((s, d) => s + d.deficit, 0);
-  const avgDeficit = days.length > 0 ? Math.round(totalDeficit / days.length) : 0;
+  const loggedDays = days.filter((d) => d.hasLog);
+  const totalDeficit = loggedDays.reduce((s, d) => s + d.deficit, 0);
+  const avgDeficit = loggedDays.length > 0 ? Math.round(totalDeficit / loggedDays.length) : 0;
 
   // 7700 cal ≈ 1 kg of body fat
   const estimatedWeightChangeKg = Math.round((-totalDeficit / 7700) * 100) / 100;

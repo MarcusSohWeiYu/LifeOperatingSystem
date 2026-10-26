@@ -33,6 +33,7 @@ export type DailyLog = {
   date: string;  // YYYY-MM-DD
   entries: FoodEntry[];
   steps?: number;
+  workoutCalsBurned?: number;
 };
 
 export type Gender = "male" | "female";
@@ -73,9 +74,15 @@ export type SavedFood = {
   savedAt: string;
 };
 
+export type WeightEntry = {
+  date: string;  // YYYY-MM-DD
+  weightKg: number;
+};
+
 export type NutritionState = {
   goals: DailyGoals;
   logs: Record<string, DailyLog>;
   savedFoods?: SavedFood[];
   bodyStats?: BodyStats;
+  weightLog?: WeightEntry[];
 };
