@@ -61,7 +61,7 @@ export function DailySummary({ goals, entries, onEditGoals }: Props) {
   const ringColor = progress <= 0.75 ? "#22c55e" : progress <= 1 ? "#f59e0b" : "#ef4444";
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-5">
+    <div className="rounded-xl border bg-card p-4 space-y-5 ring-1 ring-primary/10 bg-gradient-to-b from-primary/[0.04] to-transparent">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Daily Summary</h2>

@@ -15,7 +15,7 @@ export function MobileNav() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 border-t border-border bg-background z-30">
       <div className="flex items-center justify-around h-14 px-1 pb-[env(safe-area-inset-bottom)]">
-        {mobileLinks.map(({ href, label, icon: Icon }) => {
+        {mobileLinks.map(({ href, label, mobileLabel, icon: Icon }) => {
           const hasMoreSpecificMatch = mobileLinks.some(
             (other) => other.href !== href && other.href.startsWith(href + "/") && pathname.startsWith(other.href),
           );
@@ -36,7 +36,7 @@ export function MobileNav() {
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="truncate">{label}</span>
+              <span className="truncate">{mobileLabel ?? label}</span>
             </Link>
           );
         })}
