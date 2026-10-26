@@ -3,14 +3,17 @@
 import { useRef, useState } from "react";
 import { ImageIcon, SendIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { AttachedFood } from "./types";
 
 type Props = {
   disabled: boolean;
-  onSend: (text: string, imageDataUrl?: string) => void;
+  stagedFood: AttachedFood | null;
+  onSend: (text: string, imageDataUrl?: string, attachedFood?: AttachedFood) => void;
   onPickFood?: () => void;
+  onClearFood: () => void;
 };
 
-export function ChatInput({ disabled, onSend, onPickFood }: Props) {
+export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFood }: Props) {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -28,7 +31,6 @@ export function ChatInput({ disabled, onSend, onPickFood }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     attachImage(file);
-    // Reset input so the same file can be re-selected
     e.target.value = "";
   }
 
@@ -47,11 +49,10 @@ export function ChatInput({ disabled, onSend, onPickFood }: Props) {
 
   function handleSubmit() {
     const trimmed = text.trim();
-    if (!trimmed && !imagePreview) return;
-    onSend(trimmed, imagePreview ?? undefined);
+    if (!trimmed && !imagePreview && !stagedFood) return;
+    onSend(trimmed, imagePreview ?? undefined, stagedFood ?? undefined);
     setText("");
     setImagePreview(null);
-    // Refocus textarea
     textareaRef.current?.focus();
   }
 
@@ -62,27 +63,49 @@ export function ChatInput({ disabled, onSend, onPickFood }: Props) {
     }
   }
 
-  const canSend = !disabled && (text.trim().length > 0 || imagePreview !== null);
+  const canSend = !disabled && (text.trim().length > 0 || imagePreview !== null || stagedFood !== null);
 
   return (
     <div className="border-t bg-background p-3 space-y-2">
-      {imagePreview && (
-        <div className="relative inline-block">
-          {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not optimizable */}
-          <img
-            src={imagePreview}
-            alt="Attached"
-            className="h-16 rounded-lg border"
-          />
-          <button
-            type="button"
-            onClick={() => setImagePreview(null)}
-            className="absolute -top-1.5 -right-1.5 rounded-full bg-foreground/80 text-background p-0.5"
-          >
-            <XIcon className="h-3 w-3" />
-          </button>
-        </div>
-      )}
+      {/* Staged attachments */}
+      <div className="flex flex-wrap gap-2">
+        {imagePreview && (
+          <div className="relative inline-block">
+            {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not optimizable */}
+            <img
+              src={imagePreview}
+              alt="Attached"
+              className="h-16 rounded-lg border"
+            />
+            <button
+              type="button"
+              onClick={() => setImagePreview(null)}
+              className="absolute -top-1.5 -right-1.5 rounded-full bg-foreground/80 text-background p-0.5"
+            >
+              <XIcon className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+
+        {stagedFood && (
+          <div className="relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 pr-7 text-xs">
+            <div>
+              <p className="font-medium text-sm leading-tight">{stagedFood.name}</p>
+              <p className="text-muted-foreground">
+                {stagedFood.calories} cal · P {stagedFood.proteinG}g · C {stagedFood.carbsG}g · F {stagedFood.fatG}g
+                {stagedFood.servingSize ? ` · ${stagedFood.servingSize}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClearFood}
+              className="absolute -top-1.5 -right-1.5 rounded-full bg-foreground/80 text-background p-0.5"
+            >
+              <XIcon className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-end gap-2">
         <Button

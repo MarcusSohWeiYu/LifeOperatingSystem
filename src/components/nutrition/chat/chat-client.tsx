@@ -7,7 +7,7 @@ import { loadNutritionState, saveNutritionState, todayDateStr } from "../utils";
 import { getDefaultNutritionState } from "../mock-data";
 import { MEAL_LABELS } from "../types";
 import type { MealType, FoodEntry, SavedFood } from "../types";
-import type { AiFoodItem, ChatMessage, ChatSessionStore } from "./types";
+import type { AiFoodItem, AttachedFood, ChatMessage, ChatSessionStore } from "./types";
 import {
   loadChatStore,
   saveChatStore,
@@ -38,6 +38,7 @@ export function ChatClient() {
   const [sending, setSending] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [foodPickerOpen, setFoodPickerOpen] = useState(false);
+  const [stagedFood, setStagedFood] = useState<AttachedFood | null>(null);
 
   // Persist store on change
   useEffect(() => {
@@ -99,24 +100,47 @@ export function ChatClient() {
     return state?.savedFoods ?? [];
   }, [foodPickerOpen]);
 
-  function handleFoodPicked(description: string) {
-    const prompt = `Tell me about this food: ${description}`;
-    handleSend(prompt);
+  function handleFoodPicked(food: AttachedFood) {
+    setStagedFood(food);
   }
 
   // ── Send message ──────────────────────────────────────────────────────
 
-  const handleSend = useCallback(async (text: string, imageDataUrl?: string) => {
+  const handleSend = useCallback(async (text: string, imageDataUrl?: string, attachedFood?: AttachedFood) => {
     if (!store.activeSessionId) return;
     const sessionId = store.activeSessionId;
+
+    // Build content for the AI — embed food details if attached
+    let aiContent = text;
+    if (attachedFood) {
+      const foodDesc = [
+        attachedFood.name,
+        attachedFood.brand ? `(${attachedFood.brand})` : "",
+        `— ${attachedFood.calories} cal`,
+        `P: ${attachedFood.proteinG}g`,
+        `C: ${attachedFood.carbsG}g`,
+        `F: ${attachedFood.fatG}g`,
+        attachedFood.servingSize ? `per ${attachedFood.servingSize}` : "",
+      ].filter(Boolean).join(" ");
+      aiContent = text
+        ? `[Food: ${foodDesc}]\n${text}`
+        : `Tell me about this food: ${foodDesc}`;
+    }
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: text,
+      content: aiContent,
       imageDataUrl,
+      attachedFood,
       timestamp: new Date().toISOString(),
     };
+
+    // Clear staged food
+    setStagedFood(null);
+
+    // Auto-title from text or food name
+    const titleSource = text || attachedFood?.name || "Photo chat";
 
     // Add user message and auto-title on first message
     setStore((s) =>
@@ -125,7 +149,7 @@ export function ChatClient() {
         return {
           ...sess,
           messages: [...sess.messages, userMsg],
-          title: isFirst ? text.slice(0, 40) || "Photo chat" : sess.title,
+          title: isFirst ? titleSource.slice(0, 40) : sess.title,
           updatedAt: new Date().toISOString(),
         };
       }),
@@ -227,8 +251,25 @@ export function ChatClient() {
     toast.success(`${item.name} logged to ${MEAL_LABELS[meal]}`);
   }
 
+  // ── Edit message ────────────────────────────────────────────────────
+
+  function handleEditMessage(messageId: string, newContent: string) {
+    if (!store.activeSessionId) return;
+    setStore((s) =>
+      updateSession(s, store.activeSessionId!, (sess) => ({
+        ...sess,
+        messages: sess.messages.map((m) => {
+          if (m.id !== messageId) return m;
+          return { ...m, content: newContent };
+        }),
+        updatedAt: new Date().toISOString(),
+      })),
+    );
+    toast.success("Message updated");
+  }
+
   return (
-    <div className="relative flex h-[calc(100vh-theme(spacing.6)*2)] md:h-[calc(100vh-theme(spacing.6)*2)] flex-col rounded-xl border bg-card overflow-hidden">
+    <div className="relative flex h-screen md:h-screen flex-col bg-card overflow-hidden">
       <ChatHeader
         session={session}
         onNewSession={handleNewSession}
@@ -243,12 +284,15 @@ export function ChatClient() {
         messages={messages}
         sending={sending}
         onLogFood={handleLogFood}
+        onEditMessage={handleEditMessage}
       />
 
       <ChatInput
         disabled={sending || !store.activeSessionId}
+        stagedFood={stagedFood}
         onSend={handleSend}
         onPickFood={() => setFoodPickerOpen(true)}
+        onClearFood={() => setStagedFood(null)}
       />
 
       <FoodPickerDialog

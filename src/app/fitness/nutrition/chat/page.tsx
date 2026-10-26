@@ -8,5 +8,9 @@ const ChatClient = dynamic(
 );
 
 export default function AiChatPage() {
-  return <ChatClient />;
+  return (
+    <div className="-mx-4 -my-6">
+      <ChatClient />
+    </div>
+  );
 }

@@ -15,36 +15,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { searchFoods, getFoodDetails } from "@/actions/nutrition";
 import type { FoodSearchResult } from "@/actions/nutrition";
 import type { SavedFood } from "../types";
+import type { AttachedFood } from "./types";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   savedFoods: SavedFood[];
-  onSelect: (description: string) => void;
+  onSelect: (food: AttachedFood) => void;
 };
-
-function formatFoodDescription(food: {
-  name: string;
-  brand?: string;
-  servingSize?: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}): string {
-  const parts = [food.name];
-  if (food.brand) parts.push(`(${food.brand})`);
-  parts.push(`— ${food.calories} cal`);
-  parts.push(`P: ${food.proteinG}g`);
-  parts.push(`C: ${food.carbsG}g`);
-  parts.push(`F: ${food.fatG}g`);
-  if (food.servingSize) parts.push(`per ${food.servingSize}`);
-  return parts.join(" ");
-}
 
 type SearchStatus = "idle" | "loading" | "results" | "empty" | "error";
 
-function SearchPanel({ onSelect }: { onSelect: (desc: string) => void }) {
+function SearchPanel({ onSelect }: { onSelect: (food: AttachedFood) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoodSearchResult[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
@@ -87,17 +69,26 @@ function SearchPanel({ onSelect }: { onSelect: (desc: string) => void }) {
     const res = await getFoodDetails(result.foodId);
     setLoadingId(null);
     if (!res.ok) {
-      onSelect(formatFoodDescription({
+      onSelect({
         name: result.name,
-        brand: result.brand,
+        brand: result.brand || undefined,
         calories: result.calories,
         proteinG: 0,
         carbsG: 0,
         fatG: 0,
-      }));
+      });
       return;
     }
-    onSelect(formatFoodDescription(res.food));
+    const f = res.food;
+    onSelect({
+      name: f.name,
+      brand: f.brand || undefined,
+      servingSize: f.servingSize || undefined,
+      calories: f.calories,
+      proteinG: f.proteinG,
+      carbsG: f.carbsG,
+      fatG: f.fatG,
+    });
   }
 
   return (
@@ -189,7 +180,7 @@ function SearchPanel({ onSelect }: { onSelect: (desc: string) => void }) {
   );
 }
 
-function SavedPanel({ savedFoods, onSelect }: { savedFoods: SavedFood[]; onSelect: (desc: string) => void }) {
+function SavedPanel({ savedFoods, onSelect }: { savedFoods: SavedFood[]; onSelect: (food: AttachedFood) => void }) {
   if (savedFoods.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -209,7 +200,15 @@ function SavedPanel({ savedFoods, onSelect }: { savedFoods: SavedFood[]; onSelec
           key={food.id}
           type="button"
           className="w-full flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-muted/50 text-left transition-colors"
-          onClick={() => onSelect(formatFoodDescription(food))}
+          onClick={() => onSelect({
+            name: food.name,
+            brand: food.brand || undefined,
+            servingSize: food.servingSize || undefined,
+            calories: food.calories,
+            proteinG: food.proteinG,
+            carbsG: food.carbsG,
+            fatG: food.fatG,
+          })}
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium leading-tight">{food.name}</p>
@@ -230,8 +229,8 @@ function SavedPanel({ savedFoods, onSelect }: { savedFoods: SavedFood[]; onSelec
 export function FoodPickerDialog({ open, onOpenChange, savedFoods, onSelect }: Props) {
   const defaultTab = savedFoods.length > 0 ? "saved" : "search";
 
-  function handleSelect(description: string) {
-    onSelect(description);
+  function handleSelect(food: AttachedFood) {
+    onSelect(food);
     onOpenChange(false);
   }
 

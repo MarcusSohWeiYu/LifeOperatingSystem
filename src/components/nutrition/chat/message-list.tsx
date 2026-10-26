@@ -10,9 +10,10 @@ type Props = {
   messages: ChatMessage[];
   sending: boolean;
   onLogFood: (messageId: string, foodIndex: number, meal: MealType) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
 };
 
-export function MessageList({ messages, sending, onLogFood }: Props) {
+export function MessageList({ messages, sending, onLogFood, onEditMessage }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function MessageList({ messages, sending, onLogFood }: Props) {
           key={msg.id}
           message={msg}
           onLogFood={(foodIndex, meal) => onLogFood(msg.id, foodIndex, meal)}
+          onEdit={msg.role === "user" ? (newContent) => onEditMessage(msg.id, newContent) : undefined}
         />
       ))}
 
