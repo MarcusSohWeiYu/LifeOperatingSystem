@@ -8,8 +8,10 @@ const ChatClient = dynamic(
 );
 
 export default function AiChatPage() {
+  // Fixed positioning to fill the viewport next to the sidebar,
+  // breaking out of the parent layout's container constraints.
   return (
-    <div className="-mx-4 -my-6">
+    <div className="fixed inset-0 md:left-56 bg-card z-10">
       <ChatClient />
     </div>
   );

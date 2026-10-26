@@ -326,7 +326,7 @@ export function ChatClient() {
   }
 
   return (
-    <div className="relative flex h-screen md:h-screen flex-col bg-card overflow-hidden">
+    <div className="relative flex h-full flex-col bg-card overflow-hidden">
       <ChatHeader
         session={session}
         onNewSession={handleNewSession}
