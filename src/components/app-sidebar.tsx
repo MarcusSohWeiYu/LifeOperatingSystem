@@ -48,8 +48,13 @@ export function AppSidebar() {
 
       <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto">
         {activeModule.navLinks.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            href === dashboardHref
+          // Check if another sibling link is a more specific match
+          const hasMoreSpecificMatch = activeModule.navLinks.some(
+            (other) => other.href !== href && other.href.startsWith(href + "/") && pathname.startsWith(other.href),
+          );
+          const isActive = hasMoreSpecificMatch
+            ? false
+            : href === dashboardHref
               ? pathname === href
               : pathname.startsWith(href);
           return (
