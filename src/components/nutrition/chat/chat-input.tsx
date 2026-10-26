@@ -22,6 +22,7 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const stoppedManuallyRef = useRef(false);
+  const processedRef = useRef(0);
 
   function toggleSpeech() {
     if (listening) {
@@ -35,25 +36,29 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
     if (!SpeechRecognition) return;
 
     stoppedManuallyRef.current = false;
+    processedRef.current = 0;
 
     function startRecognition() {
       const recognition = new SpeechRecognition();
       recognition.lang = "en-SG";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
-      recognition.continuous = true;
+      recognition.continuous = false;
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (!result?.isFinal) continue;
-          const transcript = result[0]?.transcript?.trim();
-          if (transcript) {
-            setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-          }
+        const parts: string[] = [];
+        for (let i = processedRef.current; i < event.results.length; i++) {
+          const transcript = event.results[i]?.[0]?.transcript?.trim();
+          if (transcript) parts.push(transcript);
+        }
+        processedRef.current = event.results.length;
+        const chunk = parts.join(" ");
+        if (chunk) {
+          setText((prev) => (prev ? `${prev} ${chunk}` : chunk));
         }
       };
       recognition.onend = () => {
+        processedRef.current = 0;
         if (!stoppedManuallyRef.current) {
           try {
             startRecognition();
