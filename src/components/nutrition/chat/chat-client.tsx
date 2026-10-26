@@ -6,7 +6,7 @@ import { analyzeFood } from "@/actions/chat";
 import { loadNutritionState, saveNutritionState, todayDateStr } from "../utils";
 import { getDefaultNutritionState } from "../mock-data";
 import { MEAL_LABELS } from "../types";
-import type { MealType, FoodEntry } from "../types";
+import type { MealType, FoodEntry, SavedFood } from "../types";
 import type { AiFoodItem, ChatMessage, ChatSessionStore } from "./types";
 import {
   loadChatStore,
@@ -25,6 +25,7 @@ import { ChatHeader } from "./chat-header";
 import { SessionDrawer } from "./session-drawer";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
+import { FoodPickerDialog } from "./food-picker-dialog";
 
 export function ChatClient() {
   const [store, setStore] = useState<ChatSessionStore>(() => {
@@ -36,6 +37,7 @@ export function ChatClient() {
   });
   const [sending, setSending] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [foodPickerOpen, setFoodPickerOpen] = useState(false);
 
   // Persist store on change
   useEffect(() => {
@@ -87,6 +89,19 @@ export function ChatClient() {
 
   function handleRenameSession(id: string, title: string) {
     setStore((s) => renameSession(s, id, title));
+  }
+
+  // ── Saved foods for picker ─────────────────────────────────────────────
+
+  const savedFoods: SavedFood[] = useMemo(() => {
+    if (!foodPickerOpen) return [];
+    const state = loadNutritionState();
+    return state?.savedFoods ?? [];
+  }, [foodPickerOpen]);
+
+  function handleFoodPicked(description: string) {
+    const prompt = `Tell me about this food: ${description}`;
+    handleSend(prompt);
   }
 
   // ── Send message ──────────────────────────────────────────────────────
@@ -213,7 +228,7 @@ export function ChatClient() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.6)*2)] md:h-[calc(100vh-theme(spacing.6)*2)] flex-col rounded-xl border bg-card overflow-hidden">
+    <div className="relative flex h-[calc(100vh-theme(spacing.6)*2)] md:h-[calc(100vh-theme(spacing.6)*2)] flex-col rounded-xl border bg-card overflow-hidden">
       <ChatHeader
         session={session}
         onNewSession={handleNewSession}
@@ -233,6 +248,14 @@ export function ChatClient() {
       <ChatInput
         disabled={sending || !store.activeSessionId}
         onSend={handleSend}
+        onPickFood={() => setFoodPickerOpen(true)}
+      />
+
+      <FoodPickerDialog
+        open={foodPickerOpen}
+        onOpenChange={setFoodPickerOpen}
+        savedFoods={savedFoods}
+        onSelect={handleFoodPicked}
       />
 
       <SessionDrawer

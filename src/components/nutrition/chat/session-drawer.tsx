@@ -51,7 +51,7 @@ export function SessionDrawer({
       {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40"
+          className="absolute inset-0 z-40 bg-black/40 rounded-xl"
           onClick={onClose}
         />
       )}
@@ -59,7 +59,7 @@ export function SessionDrawer({
       {/* Drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 bg-background border-r shadow-lg transition-transform duration-200 ease-out flex flex-col",
+          "absolute inset-y-0 left-0 z-50 w-72 bg-background border-r shadow-lg transition-transform duration-200 ease-out flex flex-col rounded-l-xl",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >

@@ -1,15 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImageIcon, SendIcon, XIcon } from "lucide-react";
+import { ImageIcon, SendIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Props = {
   disabled: boolean;
   onSend: (text: string, imageDataUrl?: string) => void;
+  onPickFood?: () => void;
 };
 
-export function ChatInput({ disabled, onSend }: Props) {
+export function ChatInput({ disabled, onSend, onPickFood }: Props) {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -89,9 +90,22 @@ export function ChatInput({ disabled, onSend }: Props) {
           size="icon"
           onClick={() => fileRef.current?.click()}
           disabled={disabled}
+          title="Attach image"
         >
           <ImageIcon className="h-5 w-5" />
         </Button>
+
+        {onPickFood && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onPickFood}
+            disabled={disabled}
+            title="Import food"
+          >
+            <UtensilsCrossedIcon className="h-5 w-5" />
+          </Button>
+        )}
 
         <input
           ref={fileRef}
