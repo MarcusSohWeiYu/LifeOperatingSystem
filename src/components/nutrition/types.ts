@@ -32,6 +32,32 @@ export type DailyGoals = {
 export type DailyLog = {
   date: string;  // YYYY-MM-DD
   entries: FoodEntry[];
+  steps?: number;
+};
+
+export type Gender = "male" | "female";
+
+export type ActivityLevel =
+  | "sedentary"       // desk job, little exercise
+  | "light"           // light exercise 1-3 days/week
+  | "moderate"        // moderate exercise 3-5 days/week
+  | "active"          // hard exercise 6-7 days/week
+  | "very_active";    // very hard exercise, physical job
+
+export const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
+  sedentary: "Sedentary (desk job)",
+  light: "Lightly active (1-3 days/wk)",
+  moderate: "Moderately active (3-5 days/wk)",
+  active: "Active (6-7 days/wk)",
+  very_active: "Very active (athlete/physical job)",
+};
+
+export type BodyStats = {
+  weightKg: number;
+  heightCm: number;
+  age: number;
+  gender: Gender;
+  activityLevel: ActivityLevel;
 };
 
 export type SavedFood = {
@@ -51,4 +77,5 @@ export type NutritionState = {
   goals: DailyGoals;
   logs: Record<string, DailyLog>;
   savedFoods?: SavedFood[];
+  bodyStats?: BodyStats;
 };

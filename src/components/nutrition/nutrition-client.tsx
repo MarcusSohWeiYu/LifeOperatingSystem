@@ -9,6 +9,7 @@ import { MealSection } from "./meal-section";
 import { FoodFormDialog } from "./food-form-dialog";
 import { AddFoodDialog } from "./add-food-dialog";
 import { GoalsDialog } from "./goals-dialog";
+import { StepCounter } from "./step-counter";
 import { MEAL_ORDER, MEAL_LABELS } from "./types";
 import type { DailyGoals, FoodEntry, MealType, NutritionState, SavedFood } from "./types";
 import { getDefaultNutritionState } from "./mock-data";
@@ -235,6 +236,20 @@ export function NutritionClient() {
     });
   }
 
+  // ── Steps ────────────────────────────────────────────────────────────────
+
+  function handleStepsChange(steps: number) {
+    setState((s) => {
+      const log = s.logs[selectedDate] ?? { date: selectedDate, entries: [] };
+      return {
+        ...s,
+        logs: { ...s.logs, [selectedDate]: { ...log, steps } },
+      };
+    });
+  }
+
+  const currentSteps = state.logs[selectedDate]?.steps ?? 0;
+
   // ── Date nav ─────────────────────────────────────────────────────────────
 
   function handleSelectDate(d: string) { setSelectedDate(d); }
@@ -261,6 +276,8 @@ export function NutritionClient() {
         entries={currentEntries()}
         onEditGoals={() => setDialog({ type: "goals" })}
       />
+
+      <StepCounter steps={currentSteps} onChange={handleStepsChange} />
 
       {MEAL_ORDER.map((meal) => (
         <MealSection
