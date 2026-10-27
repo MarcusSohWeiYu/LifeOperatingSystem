@@ -144,7 +144,34 @@ export function NutritionClient() {
       ...s,
       savedFoods: (s.savedFoods ?? []).filter((f) => f.id !== id),
     }));
-    toast.success("Removed from saved");
+  }
+
+  function handleUpdateSaved(food: SavedFood) {
+    setState((s) => ({
+      ...s,
+      savedFoods: (s.savedFoods ?? []).map((f) => (f.id === food.id ? food : f)),
+    }));
+  }
+
+  function handleDirectAddSaved(food: SavedFood) {
+    if (dialog.type !== "add-food") return;
+    const meal = dialog.meal;
+    const entry: FoodEntry = {
+      id: nextId(),
+      meal,
+      name: food.name,
+      brand: food.brand,
+      servingSize: food.servingSize,
+      servings: food.servings,
+      calories: food.calories,
+      proteinG: food.proteinG,
+      carbsG: food.carbsG,
+      fatG: food.fatG,
+    };
+    const updated = [...currentEntries(), entry];
+    upsertEntries(updated);
+    setDialog({ type: "none" });
+    toast.success(`${food.name} added to ${MEAL_LABELS[meal]}`);
   }
 
   function handleSelectSaved(food: SavedFood) {
@@ -306,6 +333,8 @@ export function NutritionClient() {
         onSelectProduct={handleSelectProduct}
         onSelectSaved={handleSelectSaved}
         onRemoveSaved={handleRemoveSaved}
+        onDirectAddSaved={handleDirectAddSaved}
+        onUpdateSaved={handleUpdateSaved}
         onQuickAddSave={handleQuickAddSave}
         scanLoading={scanLookupPending}
         onBarcodeDetected={handleBarcodeDetected}

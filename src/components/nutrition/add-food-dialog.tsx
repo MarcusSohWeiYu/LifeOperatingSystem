@@ -33,6 +33,8 @@ type Props = {
   onSelectProduct: (product: FoodProduct) => void;
   onSelectSaved: (food: SavedFood) => void;
   onRemoveSaved: (id: string) => void;
+  onDirectAddSaved: (food: SavedFood) => void;
+  onUpdateSaved: (food: SavedFood) => void;
   onQuickAddSave: (entry: Omit<FoodEntry, "id">) => void;
   scanLoading: boolean;
   onBarcodeDetected: (barcode: string) => void;
@@ -47,6 +49,8 @@ export function AddFoodDialog({
   onSelectProduct,
   onSelectSaved,
   onRemoveSaved,
+  onDirectAddSaved,
+  onUpdateSaved,
   onQuickAddSave,
   scanLoading,
   onBarcodeDetected,
@@ -96,6 +100,8 @@ export function AddFoodDialog({
               savedFoods={savedFoods}
               onSelect={onSelectSaved}
               onRemove={onRemoveSaved}
+              onDirectAdd={onDirectAddSaved}
+              onUpdate={onUpdateSaved}
             />
           </TabsContent>
 
