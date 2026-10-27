@@ -32,14 +32,14 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!Ctor) return;
 
     stoppedManuallyRef.current = false;
     processedRef.current = 0;
 
     function startRecognition() {
-      const recognition = new SpeechRecognition();
+      const recognition = new (Ctor!)();
       recognition.lang = "en-SG";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
@@ -55,6 +55,12 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
           const transcript = String(last[0].transcript ?? "").trim();
           if (transcript) {
             setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+            requestAnimationFrame(() => {
+              const el = textareaRef.current;
+              if (!el) return;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+            });
           }
         } catch {
           // silently ignore parse errors
@@ -254,7 +260,6 @@ export function ChatInput({ disabled, stagedFood, onSend, onPickFood, onClearFoo
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={handleImageChange}
         />
