@@ -3,10 +3,11 @@
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/sidebar-context";
+import { ChatLoadingSkeleton } from "@/components/nutrition/chat/chat-loading-skeleton";
 
 const ChatClient = dynamic(
   () => import("@/components/nutrition/chat/chat-client").then((m) => m.ChatClient),
-  { ssr: false },
+  { ssr: false, loading: () => <ChatLoadingSkeleton /> },
 );
 
 export default function AiChatPage() {
